@@ -707,10 +707,22 @@ async function carregarNoticiasG1() {
     try {
         const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(RSS_G1);
         const resposta = await fetch(proxy);
+        
+        if (!resposta.ok) {
+            throw new Error('Status ' + resposta.status);
+        }
+        
         const textoXml = await resposta.text();
 
         const parser = new DOMParser();
         const xml = parser.parseFromString(textoXml, 'text/xml');
+        
+        // Verifica se o XML veio corrompido/vazio
+        const erroParser = xml.querySelector('parsererror');
+        if (erroParser) {
+            throw new Error('XML inválido retornado pelo proxy');
+        }
+        
         const itens = xml.querySelectorAll('item');
 
         const manchetes = Array.from(itens)
@@ -721,10 +733,12 @@ async function carregarNoticiasG1() {
         if (manchetes.length) {
             document.getElementById('avisos').textContent =
                 manchetes.map(m => `📰 ${m}`).join('     •     ');
+            console.log('Notícias G1 carregadas:', manchetes.length);
+        } else {
+            throw new Error('Nenhuma manchete encontrada no feed');
         }
     } catch (erro) {
-        console.log('Não foi possível carregar notícias do G1:', erro);
-        // mantém o texto atual do ticker se der erro
+        console.log('Não foi possível carregar notícias do G1:', erro.message);
     }
 }
 
