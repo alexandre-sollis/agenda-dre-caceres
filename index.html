@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Agenda Institucional</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div class="background"></div>
+
+<header>
+    <div id="barraEvento">
+
+        <span id="textoBarra">
+    
+            Nenhum evento programado.
+    
+        </span>
+    
+    </div>
+
+<div class="logo-area">
+
+    <div class="logo">
+        <img src="logo.png" alt="Logo DRE Cáceres">
+    </div>
+
+<div>
+
+<h1>DRE CÁCERES - COPED</h1>
+
+<p>Agenda Institucional</p>
+
+</div>
+
+</div>
+
+
+</header>
+
+<main>
+
+<section class="dashboard">
+<div class="card">
+
+    <h3>⏳ Próximo Evento</h3>
+    
+    <span id="proximoEvento">--:--</span>
+    
+</div>
+
+<div class="card">
+
+<h3>📅 Eventos</h3>
+
+<span id="totalEventos">0</span>
+
+</div>
+
+<div class="card">
+
+<h3>📌 Hoje</h3>
+
+<span id="eventosHoje">0</span>
+
+</div>
+
+<div class="card">
+
+<h3>👥 Responsáveis</h3>
+
+<span id="totalResponsaveis">0</span>
+
+</div>
+
+</section>
+
+<section class="table-container">
+
+<table id="agenda">
+
+<thead>
+<tr>
+    <th width="6%">INÍCIO</th>
+    <th width="6%">FIM</th>
+    <th width="8%">HORÁRIO</th>
+    <th width="7%">AVISO</th>
+    <th width="10%">PERÍODO</th>
+    <th>AÇÃO</th>
+    <th width="20%">RESPONSÁVEL</th>
+</tr>
+</thead>
+
+<tbody id="tbody">
+
+</tbody>
+
+</table>
+
+</section>
+
+<div class="toolbar-bottom">
+
+<button id="btnAdicionarLinha">
+
+➕ Adicionar Linha
+
+</button>
+
+<button id="btnRemoverLinha">
+
+➖ Remover Linha
+
+</button>
+
+</div>
+
+</main>
+
+<div id="alertaEvento" class="alerta">
+
+    <div class="alerta-box">
+
+        <h1>🔔 PRÓXIMO EVENTO</h1>
+
+        <h2 id="tituloEvento"></h2>
+
+        <p id="horaEvento"></p>
+
+        <div id="contadorEvento"></div>
+
+    </div>
+
+</div>
+
+<footer>
+
+<div class="ticker">
+
+<div id="avisos">
+
+📢 Bem-vindos à Agenda Institucional da DRE Cáceres.
+
+</div>
+
+</div>
+
+</footer>
+
+<template id="linha">
+    <tr>
+    
+        <td contenteditable="true"></td>
+    
+        <td contenteditable="true"></td>
+    
+        <td contenteditable="true"></td>
+    
+        <td contenteditable="true">15</td>
+    
+        <td contenteditable="true"></td>
+    
+        <td contenteditable="true"></td>
+    
+        <td contenteditable="true"></td>
+    
+    </tr>
+</template>
+
+<script type="module" src="app.js"></script>
+
+</body>
+
+</html>
