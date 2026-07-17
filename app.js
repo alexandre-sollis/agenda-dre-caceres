@@ -5,17 +5,45 @@ import {
 } from "./firebase.js";
 
 /* =====================================================
-   CONFIGURAÇÃO
+   CONFIGURAÇÃO & BLOQUEIO DE REPOUSO (WAKE LOCK)
 ===================================================== */
 
 const modoTV = window.location.search.includes("tv");
+let wakeLock = null;
+
+async function ativarFocoTela() {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log("Wake Lock ativo: A tela não irá entrar em repouso.");
+            
+            // Se a página perder o foco (ex: aba oculta) e voltar, reativa o bloqueio
+            document.addEventListener('visibilitychange', async () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            });
+        } catch (erro) {
+            console.log(`Não foi possível manter a tela ativa: ${erro.message}`);
+        }
+    } else {
+        console.log("O navegador desta TV não suporta a API de Wake Lock nativa.");
+    }
+}
 
 if (modoTV) {
     document.body.classList.add("tv");
+    
+    // Tenta ativar o Wake Lock imediatamente
+    ativarFocoTela();
+    
+    // Garante a ativação assim que houver qualquer clique ou toque na tela
+    window.addEventListener('click', ativarFocoTela, { once: true });
+    window.addEventListener('touchstart', ativarFocoTela, { once: true });
 }
 
 /* =====================================================
-   ELEMENTOS
+   ELEMENTOS DO DOM
 ===================================================== */
 
 const tbody = document.getElementById("tbody");
@@ -33,12 +61,11 @@ const tituloEvento = document.getElementById("tituloEvento");
 const horaEvento = document.getElementById("horaEvento");
 const contadorEvento = document.getElementById("contadorEvento");
 
-
 const btnAdicionarLinha = document.getElementById("btnAdicionarLinha");
 const btnRemoverLinha = document.getElementById("btnRemoverLinha");
 
 /* =====================================================
-   VARIÁVEIS
+   VARIÁVEIS DE CONTROLE
 ===================================================== */
 
 let salvando = false;
@@ -46,143 +73,94 @@ let timeoutSalvar = null;
 let ultimaVersao = "";
 let ultimoAviso = "";
 
-
 /* =====================================================
-   UTILITÁRIOS
+   UTILITÁRIOS (DATA E FORMATAÇÃO)
 ===================================================== */
 
 function converterData(data){
-
     if(!data) return null;
-
     const partes = data.split("/");
+    let d, m, a;
 
-    let d,m,a;
-
-    if(partes.length===2){
-
-        [d,m] = partes;
+    if(partes.length === 2){
+        [d, m] = partes;
         a = new Date().getFullYear();
-
-    }else if(partes.length===3){
-
-        [d,m,a] = partes;
-
-    }else{
-
+    } else if(partes.length === 3){
+        [d, m, a] = partes;
+    } else {
         return null;
-
     }
-
-    return new Date(a,m-1,d);
-
+    // Setamos 12h (meio-dia) para evitar flutuações de fuso horário que alteram o dia
+    return new Date(a, m - 1, d, 12, 0, 0, 0);
 }
 
-function converterDataHora(data,hora){
-
+function converterDataHora(data, hora){
     if(!data || !hora) return null;
-
     const partes = data.split("/");
+    let d, m, a;
 
-    let d,m,a;
-
-    if(partes.length===2){
-
-        [d,m] = partes;
+    if(partes.length === 2){
+        [d, m] = partes;
         a = new Date().getFullYear();
-
-    }else if(partes.length===3){
-
-        [d,m,a] = partes;
-
-    }else{
-
+    } else if(partes.length === 3){
+        [d, m, a] = partes;
+    } else {
         return null;
-
     }
 
-    const [h,min] = hora.split(":");
-
-    return new Date(a,m-1,d,h,min||0,0);
-
+    const [h, min] = hora.split(":");
+    return new Date(a, m - 1, d, h, min || 0, 0, 0);
 }
 
 function hojeZero(){
-
     const hoje = new Date();
-
-    hoje.setHours(0,0,0,0);
-
+    hoje.setHours(12, 0, 0, 0); // Sincronizado com as 12h do converterData
     return hoje;
-
 }
 
 function formatarTempo(ms){
+    if(ms < 0) ms = 0;
+    const total = Math.floor(ms / 1000);
+    const dias = Math.floor(total / 86400);
+    const horas = Math.floor((total % 86400) / 3600);
+    const minutos = Math.floor((total % 3600) / 60);
+    const segundos = total % 60;
 
-    if(ms<0) ms=0;
-
-    const total=Math.floor(ms/1000);
-
-    const dias=Math.floor(total/86400);
-
-    const horas=Math.floor((total%86400)/3600);
-
-    const minutos=Math.floor((total%3600)/60);
-
-    const segundos=total%60;
-
-    if(dias>0){
-
+    if(dias > 0){
         return `${dias}d ${horas}h ${minutos}min`;
-
     }
-
-    if(horas>0){
-
+    if(horas > 0){
         return `${horas}h ${minutos}min`;
-
     }
-
     return `${minutos}min ${segundos}s`;
-
 }
 
 function formatarDataCurta(data){
-
     if(!data) return "";
-
     const partes = data.trim().split("/");
-
-    if(partes.length>=2){
-
+    if(partes.length >= 2){
         return `${partes[0]}/${partes[1]}`;
-
     }
-
     return data;
-
 }
 
 /* =====================================================
-   CRIAR LINHA
+   MANIPULAÇÃO DA TABELA (CRIAR, ADICIONAR, REMOVER)
 ===================================================== */
 
 function criarLinha(item = {
-
-    inicio:"",
-    fim:"",
-    horario:"",
-    aviso:"15",
-    periodo:"",
-    acao:"",
-    responsavel:""
-
+    inicio: "",
+    fim: "",
+    horario: "",
+    aviso: "15",
+    periodo: "",
+    acao: "",
+    responsavel: ""
 }){
-
+    if (!template) return;
+    
     const clone = template.content.cloneNode(true);
-
     const tr = clone.querySelector("tr");
-
     const td = tr.querySelectorAll("td");
 
     td[0].textContent = formatarDataCurta(item.inicio);
@@ -193,219 +171,129 @@ function criarLinha(item = {
     td[5].textContent = item.acao || "";
     td[6].textContent = item.responsavel || "";
 
-    td.forEach(campo=>{
-
+    td.forEach(campo => {
         campo.contentEditable = !modoTV;
 
         if(!modoTV){
-
-            campo.addEventListener("input",agendarSalvar);
-
-            campo.addEventListener("blur",()=>{
-
+            campo.addEventListener("input", agendarSalvar);
+            campo.addEventListener("blur", () => {
                 atualizarIndicadores();
-
                 monitorarEventos();
-
             });
-
-            campo.addEventListener("keydown",e=>{
-
-                if(e.key==="Enter"){
-
+            campo.addEventListener("keydown", e => {
+                if(e.key === "Enter"){
                     e.preventDefault();
-
                     campo.blur();
-
                 }
-
             });
-
         }
-
     });
 
     tbody.appendChild(tr);
-
 }
 
-/* =====================================================
-   ADICIONAR / REMOVER LINHA
-===================================================== */
-
 function adicionarLinha(){
-
     criarLinha();
-
     atualizarIndicadores();
-
     monitorarEventos();
-
     agendarSalvar();
-
 }
 
 function removerLinha(){
-
     const linhas = tbody.querySelectorAll("tr");
-
-    if(linhas.length===0) return;
-
-    linhas[linhas.length-1].remove();
-
+    if(linhas.length === 0) return;
+    linhas[linhas.length - 1].remove();
     atualizarIndicadores();
-
     monitorarEventos();
-
     agendarSalvar();
-
 }
 
 if(!modoTV && btnAdicionarLinha && btnRemoverLinha){
-
-    btnAdicionarLinha.addEventListener("click",adicionarLinha);
-
-    btnRemoverLinha.addEventListener("click",removerLinha);
-
+    btnAdicionarLinha.addEventListener("click", adicionarLinha);
+    btnRemoverLinha.addEventListener("click", removerLinha);
 }
-
-/* =====================================================
-   LER TABELA
-===================================================== */
 
 function lerTabela(){
-
-    const agenda=[];
-
-    tbody.querySelectorAll("tr").forEach(tr=>{
-
-        const td=tr.querySelectorAll("td");
-
-        agenda.push({
-
-            inicio:td[0].textContent.trim(),
-
-            fim:td[1].textContent.trim(),
-
-            horario:td[2].textContent.trim(),
-
-            aviso:td[3].textContent.trim() || "15",
-
-            periodo:td[4].textContent.trim(),
-
-            acao:td[5].textContent.trim(),
-
-            responsavel:td[6].textContent.trim()
-
-        });
-
+    const agenda = [];
+    tbody.querySelectorAll("tr").forEach(tr => {
+        const td = tr.querySelectorAll("td");
+        if(td.length >= 7) {
+            agenda.push({
+                inicio: td[0].textContent.trim(),
+                fim: td[1].textContent.trim(),
+                horario: td[2].textContent.trim(),
+                aviso: td[3].textContent.trim() || "15",
+                periodo: td[4].textContent.trim(),
+                acao: td[5].textContent.trim(),
+                responsavel: td[6].textContent.trim()
+            });
+        }
     });
-
     return agenda;
-
 }
 
 /* =====================================================
-   SALVAR
+   SINCRONIZAÇÃO COM O FIREBASE
 ===================================================== */
 
 function agendarSalvar(){
-
     clearTimeout(timeoutSalvar);
-
-    timeoutSalvar = setTimeout(()=>{
-
+    timeoutSalvar = setTimeout(() => {
         salvarFirebase();
-
-    },500);
-
+    }, 500);
 }
 
 async function salvarFirebase(){
-
     if(salvando) return;
-
     salvando = true;
-
-    try{
-
+    try {
         const agenda = lerTabela();
-
         ultimaVersao = JSON.stringify(agenda);
-
-        await setDoc(agendaRef,{
-
+        await setDoc(agendaRef, {
             agenda,
-
-            atualizadoEm:new Date().toISOString()
-
+            atualizadoEm: new Date().toISOString()
         });
-
-    }catch(erro){
-
-        console.error(erro);
-
+    } catch(erro) {
+        console.error("Erro ao salvar no Firebase:", erro);
     }
-
-    salvando=false;
-
+    salvando = false;
 }
 
-/* =====================================================
-   FIREBASE
-===================================================== */
-
-onSnapshot(agendaRef,async(snapshot)=>{
-
+onSnapshot(agendaRef, async (snapshot) => {
     if(!snapshot.exists()){
-
-        await setDoc(agendaRef,{
-
-            agenda:[],
-
-            atualizadoEm:new Date().toISOString()
-
+        await setDoc(agendaRef, {
+            agenda: [],
+            atualizadoEm: new Date().toISOString()
         });
-
         return;
-
     }
 
     const dados = snapshot.data();
-
     const agenda = dados.agenda || [];
-
     const json = JSON.stringify(agenda);
 
-    if(json===ultimaVersao) return;
+    if(json === ultimaVersao) return;
+    
+    // Evita que o redesenho roube o foco enquanto o usuário ativamente digita no painel
+    if (!modoTV && document.activeElement && document.activeElement.tagName === "TD") {
+        return; 
+    }
 
     ultimaVersao = json;
-
     desenharTabela(agenda);
-
 });
 
 function desenharTabela(lista){
-
     const hoje = hojeZero();
 
-    lista.sort((a,b)=>{
-
+    lista.sort((a, b) => {
         const inicioA = converterData(a.inicio);
         const fimA = converterData(a.fim);
-
         const inicioB = converterData(b.inicio);
         const fimB = converterData(b.fim);
 
-        const hojeA =
-            inicioA && fimA &&
-            hoje >= inicioA &&
-            hoje <= fimA;
-
-        const hojeB =
-            inicioB && fimB &&
-            hoje >= inicioB &&
-            hoje <= fimB;
+        const hojeA = inicioA && fimA && hoje >= inicioA && hoje <= fimA;
+        const hojeB = inicioB && fimB && hoje >= inicioB && hoje <= fimB;
 
         if(hojeA && !hojeB) return -1;
         if(!hojeA && hojeB) return 1;
@@ -416,105 +304,109 @@ function desenharTabela(lista){
         if(futuroA && !futuroB) return -1;
         if(!futuroA && futuroB) return 1;
 
-        return inicioA - inicioB;
-
+        return (inicioA || 0) - (inicioB || 0);
     });
 
-    tbody.innerHTML="";
-
-    lista.forEach(item=>criarLinha(item));
+    tbody.innerHTML = "";
+    lista.forEach(item => criarLinha(item));
 
     destacarEventos();
     colorirLinhas();
     atualizarIndicadores();
-
     monitorarEventos();
-
 }
+
+/* =====================================================
+   INDICADORES E REGRAS VISUAIS
+===================================================== */
+
 function destacarEventos(){
-
     const hoje = hojeZero();
-
-    tbody.querySelectorAll("tr").forEach(tr=>{
-
+    tbody.querySelectorAll("tr").forEach(tr => {
         tr.classList.remove("evento-hoje");
-
         const td = tr.querySelectorAll("td");
-
         const inicio = converterData(td[0].textContent);
-
         const fim = converterData(td[1].textContent);
 
         if(!inicio || !fim) return;
 
         if(hoje >= inicio && hoje <= fim){
-
             tr.classList.add("evento-hoje");
-
         }
-
     });
-
 }
+
 function atualizarIndicadores(){
-
     const linhas = tbody.querySelectorAll("tr");
-
-    totalEventos.textContent = linhas.length;
+    if(totalEventos) totalEventos.textContent = linhas.length;
 
     const hoje = hojeZero();
-
     let eventosAtivos = 0;
-
     const responsaveis = new Set();
 
-    linhas.forEach(tr=>{
-
+    linhas.forEach(tr => {
         const td = tr.querySelectorAll("td");
+        if(td.length < 7) return;
 
         const inicio = converterData(td[0].textContent);
-
         const fim = converterData(td[1].textContent);
 
-        if(inicio && fim){
-
-            if(hoje >= inicio && hoje <= fim){
-
-                eventosAtivos++;
-
-            }
-
+        if(inicio && fim && hoje >= inicio && hoje <= fim){
+            eventosAtivos++;
         }
 
-        if(td[6].textContent.trim()){
-
-            responsaveis.add(
-                td[6].textContent.trim()
-            );
-
+        const respText = td[6].textContent.trim();
+        if(respText){
+            responsaveis.add(respText);
         }
-
     });
 
-    eventosHoje.textContent = eventosAtivos;
-
-    totalResponsaveis.textContent =
-        responsaveis.size;
-
+    if(eventosHoje) eventosHoje.textContent = eventosAtivos;
+    if(totalResponsaveis) totalResponsaveis.textContent = responsaveis.size;
 }
-function monitorarEventos(){
 
-    const agora = new Date();
+function colorirLinhas(){
+    const hoje = hojeZero();
 
-    let proximo = null;
-
-    let menorTempo = Infinity;
-
-    tbody.querySelectorAll("tr").forEach(tr=>{
-
-        tr.classList.remove("evento-urgente");
+    tbody.querySelectorAll("tr").forEach(tr => {
+        tr.classList.remove(
+            "periodo-manha",
+            "periodo-tarde",
+            "periodo-noite",
+            "periodo-integral",
+            "evento-passado"
+        );
 
         const td = tr.querySelectorAll("td");
+        if(td.length < 5) return;
+
+        const periodo = td[4].textContent.trim().toLowerCase();
+
+        if(periodo.includes("manhã") || periodo.includes("manha")) tr.classList.add("periodo-manha");
+        if(periodo.includes("tarde")) tr.classList.add("periodo-tarde");
+        if(periodo.includes("noite")) tr.classList.add("periodo-noite");
+        if(periodo.includes("integral")) tr.classList.add("periodo-integral");
+
+        const fim = converterData(td[1].textContent);
+        if(fim && fim < hoje){
+            tr.classList.add("evento-passado");
+        }
+    });
+}
+
+/* =====================================================
+   MONITORAMENTO DE EVENTOS & ALERTAS EM TEMPO REAL
+===================================================== */
+
+function monitorarEventos(){
+    const agora = new Date();
+    let proximo = null;
+    let menorTempo = Infinity;
+
+    tbody.querySelectorAll("tr").forEach(tr => {
+        tr.classList.remove("evento-urgente");
+        const td = tr.querySelectorAll("td");
+        if(td.length < 6) return;
 
         const inicio = converterDataHora(
             td[0].textContent.trim(),
@@ -526,178 +418,89 @@ function monitorarEventos(){
         const diferenca = inicio - agora;
 
         if(diferenca >= 0 && diferenca < menorTempo){
-
             menorTempo = diferenca;
-
             proximo = {
-
-                linha:tr,
-
-                titulo:td[5].textContent.trim(),
-
-                horario:td[2].textContent.trim(),
-
-                aviso:parseInt(td[3].textContent.trim() || "15"),
-
-                inicio:inicio
-
+                linha: tr,
+                titulo: td[5].textContent.trim(),
+                horario: td[2].textContent.trim(),
+                aviso: parseInt(td[3].textContent.trim() || "15", 10),
+                inicio: inicio
             };
-
         }
-
     });
 
     if(!proximo){
-
-        proximoEvento.textContent="Sem eventos";
-
-        textoBarra.textContent="Nenhum evento programado.";
-
+        if(proximoEvento) proximoEvento.textContent = "Sem eventos";
+        if(textoBarra) textoBarra.textContent = "Nenhum evento programado.";
         return;
-
     }
 
-    proximoEvento.textContent = formatarTempo(menorTempo);
+    if(proximoEvento) proximoEvento.textContent = formatarTempo(menorTempo);
+    if(textoBarra) {
+        textoBarra.textContent = `Próximo evento: ${proximo.titulo} • ${proximo.horario} • Faltam ${formatarTempo(menorTempo)}`;
+    }
 
-    textoBarra.textContent =
-        `Próximo evento: ${proximo.titulo} • ${proximo.horario} • Faltam ${formatarTempo(menorTempo)}`;
-
-    if(menorTempo <= 300000){
-
+    if(menorTempo <= 300000){ // Menos de 5 minutos faltantes
         proximo.linha.classList.add("evento-urgente");
-
     }
 
     dispararAviso(proximo);
-
 }
+
 function dispararAviso(evento){
-
     const agora = new Date();
-
-    const restante = Math.ceil(
-        (evento.inicio-agora)/60000
-    );
+    const restante = Math.ceil((evento.inicio - agora) / 60000);
 
     if(restante !== evento.aviso) return;
 
-    const chave =
-        evento.titulo +
-        evento.horario +
-        evento.inicio.toDateString();
-
+    const chave = evento.titulo + evento.horario + evento.inicio.toDateString();
     if(chave === ultimoAviso) return;
 
     ultimoAviso = chave;
 
-    tituloEvento.textContent = evento.titulo;
+    if(tituloEvento) tituloEvento.textContent = evento.titulo;
+    if(horaEvento) horaEvento.textContent = "Início às " + evento.horario;
+    if(contadorEvento) contadorEvento.textContent = `Faltam ${evento.aviso} minutos`;
 
-    horaEvento.textContent =
-        "Início às " + evento.horario;
-
-    contadorEvento.textContent =
-        "Faltam " + evento.aviso + " minutos";
-
-    alertaEvento.style.display="flex";
-
-    tocarSom();
-
-    setTimeout(()=>{
-
-        alertaEvento.style.display="none";
-
-    },15000);
-
+    if(alertaEvento) {
+        alertaEvento.style.display = "flex";
+        tocarSom();
+        setTimeout(() => {
+            alertaEvento.style.display = "none";
+        }, 15000);
+    }
 }
+
 function tocarSom(){
-
     const audio = new Audio("alerta.mp3");
-
     audio.volume = 1;
-
-    audio.play().catch(()=>{
-
-        console.log("Som bloqueado pelo navegador.");
-
+    audio.play().catch(() => {
+        console.log("Som travado pelas políticas de interação do navegador.");
     });
 
-    setTimeout(()=>{
-
+    setTimeout(() => {
         audio.pause();
-
         audio.currentTime = 0;
-
-    },3000);
-
+    }, 3000);
 }
-setInterval(monitorarEventos,5000);
 
-function colorirLinhas(){
-
-    const hoje = hojeZero();
-
-    tbody.querySelectorAll("tr").forEach(tr=>{
-
-        tr.classList.remove(
-            "periodo-manha",
-            "periodo-tarde",
-            "periodo-noite",
-            "periodo-integral",
-            "evento-passado"
-        );
-
-        const td = tr.querySelectorAll("td");
-
-        const periodo = td[4].textContent
-            .trim()
-            .toLowerCase();
-
-        if(periodo.includes("manhã"))
-            tr.classList.add("periodo-manha");
-
-        if(periodo.includes("tarde"))
-            tr.classList.add("periodo-tarde");
-
-        if(periodo.includes("noite"))
-            tr.classList.add("periodo-noite");
-
-        if(periodo.includes("integral"))
-            tr.classList.add("periodo-integral");
-
-        const fim = converterData(td[1].textContent);
-
-        if(fim && fim < hoje){
-
-            tr.classList.add("evento-passado");
-
-        }
-
-    });
-
-
-
-}
+// Executa verificação a cada 5 segundos de forma constante
+setInterval(monitorarEventos, 5000);
 
 /* =====================================================
-   RECARREGAMENTO AUTOMÁTICO (MODO TV)
+   RECARREGAMENTO AUTOMÁTICO (FALHESAFE MODO TV)
 ===================================================== */
 
 if (modoTV) {
-
-    // Recarrega a página a cada 15 minutos
     setInterval(() => {
-
-        console.log("Recarregando painel...");
-
+        console.log("Limpando cache e atualizando painel...");
         location.replace(location.href);
-
-    }, 15 * 60 * 1000);
-
+    }, 15 * 60 * 1000); // 15 minutos
 }
 
-/* ===========================
-   NOTÍCIAS G1 NO TICKER
-=========================== */
+/* =====================================================
+   NOTÍCIAS G1 NO TICKER (CONTEÚDO DINÂMICO)
+===================================================== */
 
 const RSS_G1 = 'https://g1.globo.com/rss/g1/educacao/';
 
@@ -706,14 +509,11 @@ async function carregarNoticiasG1() {
         const url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(RSS_G1);
         const resposta = await fetch(url);
 
-        if (!resposta.ok) {
-            throw new Error('Status ' + resposta.status);
-        }
+        if (!resposta.ok) throw new Error('Status HTTP ' + resposta.status);
 
         const dados = await resposta.json();
-
         if (dados.status !== 'ok' || !dados.items?.length) {
-            throw new Error('Feed vazio ou status: ' + dados.status);
+            throw new Error('Feed sem dados válidos ou status: ' + dados.status);
         }
 
         const manchetes = dados.items
@@ -721,21 +521,27 @@ async function carregarNoticiasG1() {
             .map(item => item.title?.trim())
             .filter(Boolean);
 
-        if (manchetes.length) {
-            document.getElementById('avisos').textContent =
-                manchetes.map(m => `📰 ${m}`).join('     •     ');
-            console.log('Notícias G1 carregadas:', manchetes.length);
+        const avisosEl = document.getElementById('avisos');
+        if (manchetes.length && avisosEl) {
+            avisosEl.textContent = manchetes.map(m => `📰 ${m}`).join('     •     ');
+            console.log('Notícias G1 atualizadas com sucesso:', manchetes.length);
         }
     } catch (erro) {
-        console.log('Não foi possível carregar notícias do G1:', erro.message);
+        console.log('Não foi possível sincronizar notícias do G1:', erro.message);
     }
 }
 
 setInterval(() => {
-
     document.title = "Agenda " + Date.now();
+}, 30000);
 
-},30000);
-
+// Inicializadores
 carregarNoticiasG1();
-setInterval(carregarNoticiasG1, 10 * 60 * 1000);
+setInterval(carregarNoticiasG1, 10 * 60 * 1000); // Atualiza notícias a cada 10 minutos
+
+// Clique simulado de fall-back inicial para navegadores rígidos que precisam de toque
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+        document.body.click();
+    }, 1500);
+});
