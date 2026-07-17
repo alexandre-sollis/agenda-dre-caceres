@@ -699,43 +699,32 @@ if (modoTV) {
    NOTÍCIAS G1 NO TICKER
 =========================== */
 
-const RSS_G1 = 'https://g1.globo.com/rss/g1/educacao/'; 
-// troque por 'https://g1.globo.com/rss/g1/' se quiser notícias gerais, 
-// em vez de só educação
+const RSS_G1 = 'https://g1.globo.com/rss/g1/educacao/';
 
 async function carregarNoticiasG1() {
     try {
-        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(RSS_G1);
-        const resposta = await fetch(proxy);
-        
+        const url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(RSS_G1);
+        const resposta = await fetch(url);
+
         if (!resposta.ok) {
             throw new Error('Status ' + resposta.status);
         }
-        
-        const textoXml = await resposta.text();
 
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(textoXml, 'text/xml');
-        
-        // Verifica se o XML veio corrompido/vazio
-        const erroParser = xml.querySelector('parsererror');
-        if (erroParser) {
-            throw new Error('XML inválido retornado pelo proxy');
+        const dados = await resposta.json();
+
+        if (dados.status !== 'ok' || !dados.items?.length) {
+            throw new Error('Feed vazio ou status: ' + dados.status);
         }
-        
-        const itens = xml.querySelectorAll('item');
 
-        const manchetes = Array.from(itens)
+        const manchetes = dados.items
             .slice(0, 8)
-            .map(item => item.querySelector('title')?.textContent.trim())
+            .map(item => item.title?.trim())
             .filter(Boolean);
 
         if (manchetes.length) {
             document.getElementById('avisos').textContent =
                 manchetes.map(m => `📰 ${m}`).join('     •     ');
             console.log('Notícias G1 carregadas:', manchetes.length);
-        } else {
-            throw new Error('Nenhuma manchete encontrada no feed');
         }
     } catch (erro) {
         console.log('Não foi possível carregar notícias do G1:', erro.message);
@@ -743,4 +732,4 @@ async function carregarNoticiasG1() {
 }
 
 carregarNoticiasG1();
-setInterval(carregarNoticiasG1, 10 * 60 * 1000); // atualiza a cada 10 minutos
+setInterval(carregarNoticiasG1, 10 * 60 * 1000);
