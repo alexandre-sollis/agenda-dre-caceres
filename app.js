@@ -731,5 +731,11 @@ async function carregarNoticiasG1() {
     }
 }
 
+setInterval(() => {
+
+    document.title = "Agenda " + Date.now();
+
+},30000);
+
 carregarNoticiasG1();
 setInterval(carregarNoticiasG1, 10 * 60 * 1000);
