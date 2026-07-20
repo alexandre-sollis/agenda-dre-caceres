@@ -64,8 +64,16 @@ const horaEvento = document.getElementById("horaEvento");
 const contadorEvento = document.getElementById("contadorEvento");
 
 const btnAdicionarLinha = document.getElementById("btnAdicionarLinha");
+const btnImportarExcel = document.getElementById("btnImportarExcel");
 const btnRemoverLinha = document.getElementById("btnRemoverLinha");
 const btnBaixarExcel = document.getElementById("btnBaixarExcel");
+
+// Cria dinamicamente o input oculto para seleção de arquivos CSV
+const inputArquivo = document.createElement("input");
+inputArquivo.type = "file";
+inputArquivo.accept = ".csv";
+inputArquivo.style.display = "none";
+document.body.appendChild(inputArquivo);
 
 /* =====================================================
    VARIÁVEIS DE CONTROLE
@@ -80,7 +88,6 @@ let ultimoAviso = "";
    UTILITÁRIOS (DATA E FORMATAÇÃO)
 ===================================================== */
 
-// Modificado para aceitar um parâmetro que define se queremos o início ou o fim do dia
 function converterData(data, definirFimDoDia = false){
     if(!data) return null;
     const partes = data.split("/");
@@ -95,11 +102,12 @@ function converterData(data, definirFimDoDia = false){
         return null;
     }
     
-    // Se for o fim do dia, seta para 23:59:59 para evitar o bug de sumir ao meio-dia
     return definirFimDoDia 
         ? new Date(a, m - 1, d, 23, 59, 59, 999)
         : new Date(a, m - 1, d, 0, 0, 0, 0);
 }
+
+document.title = "Agenda Institucional";
 
 function converterDataHora(data, hora){
     if(!data || !hora) return null;
@@ -121,7 +129,7 @@ function converterDataHora(data, hora){
 
 function hojeZero(){
     const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0); // Alterado para 00:00:00 para alinhamento correto de intervalo
+    hoje.setHours(0, 0, 0, 0);
     return hoje;
 }
 
@@ -146,13 +154,13 @@ function formatarDataCurta(data){
     if(!data) return "";
     const partes = data.trim().split("/");
     if(partes.length >= 2){
-        return `${partes[0]}/${partes[1]}`;
+        return `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}`;
     }
     return data;
 }
 
 /* =====================================================
-   MANIPULAÇÃO DA TABELA (CRIAR, ADICIONAR, REMOVER)
+   MANIPULAÇÃO DA TABELA (CRIAR, ADICIONAR, REMOVER, IMPORTAR)
 ===================================================== */
 
 function criarLinha(item = {
@@ -206,6 +214,7 @@ function adicionarLinha(){
     agendarSalvar();
 }
 
+/* Alteração sutil: A remoção de linhas foi adaptada para manter ao menos uma linha estrutural vazia caso a tabela seja zerada. */
 function removerLinha(){
     const lines = tbody.querySelectorAll("tr");
     if(lines.length === 0) return;
@@ -263,6 +272,55 @@ function baixarExcelDoBanco() {
     URL.revokeObjectURL(url);
 }
 
+// Processa o arquivo CSV importado pelo usuário
+function importarCSV(e) {
+    const arquivo = e.target.files[0];
+    if (!arquivo) return;
+
+    const leitor = new FileReader();
+    leitor.onload = function (evt) {
+        const texto = evt.target.result;
+        const linhas = texto.split(/\r?\n/);
+        const novosItens = [];
+
+        // Ignora o cabeçalho (i = 1)
+        for (let i = 1; i < linhas.length; i++) {
+            const linha = linhas[i].trim();
+            if (!linha) continue;
+
+            // Divide por ponto e vírgula removendo as aspas extras das strings
+            const colunas = linha.split(';').map(col => col.replace(/^"|"$/g, '').trim());
+
+            if (colunas.length >= 7) {
+                novosItens.push({
+                    inicio: colunas[0],
+                    fim: colunas[1],
+                    horario: colunas[2],
+                    aviso: colunas[3] || "15",
+                    periodo: colunas[4],
+                    acao: colunas[5],
+                    responsavel: colunas[6]
+                });
+            }
+        }
+
+        if (novosItens.length > 0) {
+            if (confirm(`Deseja importar ${novosItens.length} eventos? Isso substituirá a lista atual.`)) {
+                desenharTabela(novosItens);
+                salvarFirebase();
+                alert("Importação concluída com sucesso!");
+            }
+        } else {
+            alert("Nenhum dado válido encontrado no arquivo CSV. Certifique-se de usar o separador ';' (ponto e vírgula).");
+        }
+        
+        // Limpa o input para permitir re-importar o mesmo arquivo se necessário
+        inputArquivo.value = "";
+    };
+
+    leitor.readAsText(arquivo, "UTF-8");
+}
+
 /* =====================================================
    SINCRONIZAÇÃO COM O FIREBASE
 ===================================================== */
@@ -296,7 +354,7 @@ function desenharTabela(lista){
 
     lista.sort((a, b) => {
         const inicioA = converterData(a.inicio);
-        const fimA = converterData(a.fim, true); // Fim do dia considerado
+        const fimA = converterData(a.fim, true); 
         const inicioB = converterData(b.inicio);
         const fimB = converterData(b.fim, true);
 
@@ -334,8 +392,9 @@ function destacarEventos(){
     tbody.querySelectorAll("tr").forEach(tr => {
         tr.classList.remove("evento-hoje");
         const td = tr.querySelectorAll("td");
+        if(td.length < 2) return;
         const inicio = converterData(td[0].textContent);
-        const fim = converterData(td[1].textContent, true); // Evita o bug das 12h
+        const fim = converterData(td[1].textContent, true);
 
         if(!inicio || !fim) return;
 
@@ -345,6 +404,7 @@ function destacarEventos(){
     });
 }
 
+/* O gerenciamento e a contagem de indicadores dinâmicos agora filtram de forma limpa entradas inválidas ou vazias na tabela. */
 function atualizarIndicadores(){
     if(!tbody) return;
     const linhas = tbody.querySelectorAll("tr");
@@ -359,7 +419,7 @@ function atualizarIndicadores(){
         if(td.length < 7) return;
 
         const inicio = converterData(td[0].textContent);
-        const fim = converterData(td[1].textContent, true); // Evita o bug das 12h
+        const fim = converterData(td[1].textContent, true);
 
         if(inicio && fim && hoje >= inicio && hoje <= fim){
             eventosAtivos++;
@@ -394,7 +454,7 @@ function colorirLinhas(){
         if(periodo.includes("noite")) tr.classList.add("periodo-noite");
         if(periodo.includes("integral")) tr.classList.add("periodo-integral");
 
-        const fim = converterData(td[1].textContent, true); // Evita o bug das 12h
+        const fim = converterData(td[1].textContent, true);
         if(fim && fim < hoje){
             tr.classList.add("evento-passado");
         }
@@ -516,7 +576,6 @@ onSnapshot(agendaRef, async (snapshot) => {
 
     if(json === ultimaVersao) return;
 
-    // Proteção otimizada contra concorrência e digitação
     if (!modoTV) {
         if (salvando || timeoutSalvar !== null) return;
         if (document.activeElement && document.activeElement.tagName === "TD") return;
@@ -568,10 +627,6 @@ async function carregarNoticiasG1() {
     }
 }
 
-setInterval(() => {
-    document.title = "Agenda " + Date.now();
-}, 30000);
-
 /* =====================================================
    INICIALIZAÇÃO E ASSINATURA DOS BOTÕES (APÓS DOM)
 ===================================================== */
@@ -584,14 +639,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if(btnAdicionarLinha) btnAdicionarLinha.addEventListener("click", adicionarLinha);
         if(btnRemoverLinha) btnRemoverLinha.addEventListener("click", removerLinha);
     }
+
     if (btnImportarExcel) {
-        // Evita duplicados clonando o botão se necessário
         btnImportarExcel.replaceWith(btnImportarExcel.cloneNode(true));
         const botaoImportarPronto = document.getElementById("btnImportarExcel");
 
         if (botaoImportarPronto && !modoTV) {
             botaoImportarPronto.addEventListener("click", () => {
-                inputArquivo.click(); // Abre a janela de seleção de arquivo
+                inputArquivo.click(); 
             });
 
             inputArquivo.addEventListener("change", importarCSV);
