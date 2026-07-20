@@ -635,38 +635,50 @@ document.addEventListener("DOMContentLoaded", () => {
     carregarNoticiasG1();
     setInterval(carregarNoticiasG1, 10 * 60 * 1000);
 
-    if(!modoTV) {
-        if(btnAdicionarLinha) btnAdicionarLinha.addEventListener("click", adicionarLinha);
-        if(btnRemoverLinha) btnRemoverLinha.addEventListener("click", removerLinha);
-    }
+    // Buscar os botões apenas agora que temos certeza que o HTML foi carregado
+    const botaoAdicionar = document.getElementById("btnAdicionarLinha");
+    const botaoRemover = document.getElementById("btnRemoverLinha");
+    const botaoImportar = document.getElementById("btnImportarExcel");
+    const botaoBaixar = document.getElementById("btnBaixarExcel");
 
-    // CORREÇÃO: Vinculação correta do Botão de Importar
-    if (btnImportarExcel) {
-        // Remove ouvintes antigos substituindo pelo clone
-        const novoBotaoImportar = btnImportarExcel.cloneNode(true);
-        btnImportarExcel.replaceWith(novoBotaoImportar);
-
-        if (!modoTV) {
-            novoBotaoImportar.addEventListener("click", () => {
-                inputArquivo.click(); // Abre a janela de seleção
-            });
-            
-            // O input precisa escutar a mudança AQUI para garantir o escopo
-            inputArquivo.addEventListener("change", importarCSV);
-            console.log("Sistema de importação de CSV ativado com sucesso.");
+    if (!modoTV) {
+        if (botaoAdicionar) {
+            botaoAdicionar.addEventListener("click", adicionarLinha);
+        }
+        if (botaoRemover) {
+            botaoRemover.addEventListener("click", removerLinha);
         }
     }
 
-    // CORREÇÃO: Vinculação correta do Botão de Exportar
-    if (btnBaixarExcel) {
-        const novoBotaoExcel = btnBaixarExcel.cloneNode(true);
-        btnBaixarExcel.replaceWith(novoBotaoExcel);
+    // Configuração do botão de Importar
+    if (botaoImportar) {
+        // Clonar para limpar qualquer evento residual
+        const cloneImportar = botaoImportar.cloneNode(true);
+        botaoImportar.replaceWith(cloneImportar);
+
+        if (!modoTV) {
+            cloneImportar.addEventListener("click", (e) => {
+                e.preventDefault();
+                inputArquivo.click(); // Abre a janela de arquivos
+            });
+            
+            // Garantir que o inputArquivo (criado globalmente) escute a mudança
+            inputArquivo.addEventListener("change", importarCSV);
+            console.log("Botão Importar configurado com sucesso.");
+        }
+    }
+
+    // Configuração do botão de Exportar (Baixar)
+    if (botaoBaixar) {
+        // Clonar para limpar qualquer evento residual
+        const cloneBaixar = botaoBaixar.cloneNode(true);
+        botaoBaixar.replaceWith(cloneBaixar);
         
-        novoBotaoExcel.addEventListener("click", () => {
-            // Executa a função diretamente buscando o estado atual do DOM
+        cloneBaixar.addEventListener("click", (e) => {
+            e.preventDefault();
             baixarExcelDoBanco();
         });
-        console.log("Sistema de download ativado com sucesso.");
+        console.log("Botão Baixar configurado com sucesso.");
     }
 
     setTimeout(() => {
