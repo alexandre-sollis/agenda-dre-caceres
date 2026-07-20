@@ -14,14 +14,21 @@ let wakeLock = null;
 async function ativarFocoTela() {
     if ('wakeLock' in navigator) {
         try {
+            // Evita requisições duplicadas se já estiver ativo
+            if (wakeLock !== null) return; 
+
             wakeLock = await navigator.wakeLock.request('screen');
             console.log("Wake Lock ativo: A tela não irá entrar em repouso.");
 
-            document.addEventListener('visibilitychange', async () => {
-                if (wakeLock !== null && document.visibilityState === 'visible') {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            });
+            // Adiciona o listener apenas uma vez
+            if (!window.visibilityListenerAdded) {
+                document.addEventListener('visibilitychange', async () => {
+                    if (document.visibilityState === 'visible' && navigator.wakeLock) {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                    }
+                });
+                window.visibilityListenerAdded = true;
+            }
         } catch (erro) {
             console.log(`Não foi possível manter a tela ativa: ${erro.message}`);
         }
@@ -73,7 +80,8 @@ let ultimoAviso = "";
    UTILITÁRIOS (DATA E FORMATAÇÃO)
 ===================================================== */
 
-function converterData(data){
+// Modificado para aceitar um parâmetro que define se queremos o início ou o fim do dia
+function converterData(data, definirFimDoDia = false){
     if(!data) return null;
     const partes = data.split("/");
     let d, m, a;
@@ -86,7 +94,11 @@ function converterData(data){
     } else {
         return null;
     }
-    return new Date(a, m - 1, d, 12, 0, 0, 0);
+    
+    // Se for o fim do dia, seta para 23:59:59 para evitar o bug de sumir ao meio-dia
+    return definirFimDoDia 
+        ? new Date(a, m - 1, d, 23, 59, 59, 999)
+        : new Date(a, m - 1, d, 0, 0, 0, 0);
 }
 
 function converterDataHora(data, hora){
@@ -109,7 +121,7 @@ function converterDataHora(data, hora){
 
 function hojeZero(){
     const hoje = new Date();
-    hoje.setHours(12, 0, 0, 0);
+    hoje.setHours(0, 0, 0, 0); // Alterado para 00:00:00 para alinhamento correto de intervalo
     return hoje;
 }
 
@@ -195,9 +207,9 @@ function adicionarLinha(){
 }
 
 function removerLinha(){
-    const linhas = tbody.querySelectorAll("tr");
-    if(linhas.length === 0) return;
-    linhas[linhas.length - 1].remove();
+    const lines = tbody.querySelectorAll("tr");
+    if(lines.length === 0) return;
+    lines[lines.length - 1].remove();
     atualizarIndicadores();
     monitorarEventos();
     agendarSalvar();
@@ -284,9 +296,9 @@ function desenharTabela(lista){
 
     lista.sort((a, b) => {
         const inicioA = converterData(a.inicio);
-        const fimA = converterData(a.fim);
+        const fimA = converterData(a.fim, true); // Fim do dia considerado
         const inicioB = converterData(b.inicio);
-        const fimB = converterData(b.fim);
+        const fimB = converterData(b.fim, true);
 
         const hojeA = inicioA && fimA && hoje >= inicioA && hoje <= fimA;
         const hojeB = inicioB && fimB && hoje >= inicioB && hoje <= fimB;
@@ -323,7 +335,7 @@ function destacarEventos(){
         tr.classList.remove("evento-hoje");
         const td = tr.querySelectorAll("td");
         const inicio = converterData(td[0].textContent);
-        const fim = converterData(td[1].textContent);
+        const fim = converterData(td[1].textContent, true); // Evita o bug das 12h
 
         if(!inicio || !fim) return;
 
@@ -347,7 +359,7 @@ function atualizarIndicadores(){
         if(td.length < 7) return;
 
         const inicio = converterData(td[0].textContent);
-        const fim = converterData(td[1].textContent);
+        const fim = converterData(td[1].textContent, true); // Evita o bug das 12h
 
         if(inicio && fim && hoje >= inicio && hoje <= fim){
             eventosAtivos++;
@@ -382,7 +394,7 @@ function colorirLinhas(){
         if(periodo.includes("noite")) tr.classList.add("periodo-noite");
         if(periodo.includes("integral")) tr.classList.add("periodo-integral");
 
-        const fim = converterData(td[1].textContent);
+        const fim = converterData(td[1].textContent, true); // Evita o bug das 12h
         if(fim && fim < hoje){
             tr.classList.add("evento-passado");
         }
@@ -414,7 +426,6 @@ function monitorarEventos(){
         const diferenca = inicio - agora;
 
         if(diferenca >= 0 && diferenca < menorTempo){
-            // Correção crucial: Se o aviso for inválido ou vazio, assume 15 por padrão para não quebrar
             let minutosAviso = parseInt(td[3].textContent.trim(), 10);
             if(isNaN(minutosAviso)) minutosAviso = 15;
 
@@ -505,8 +516,10 @@ onSnapshot(agendaRef, async (snapshot) => {
 
     if(json === ultimaVersao) return;
 
-    if (!modoTV && document.activeElement && document.activeElement.tagName === "TD") {
-        return;
+    // Proteção otimizada contra concorrência e digitação
+    if (!modoTV) {
+        if (salvando || timeoutSalvar !== null) return;
+        if (document.activeElement && document.activeElement.tagName === "TD") return;
     }
 
     ultimaVersao = json;
@@ -564,22 +577,16 @@ setInterval(() => {
 ===================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Carrega notícias
     carregarNoticiasG1();
     setInterval(carregarNoticiasG1, 10 * 60 * 1000);
 
-    // Ativa os botões normais do painel admin
     if(!modoTV) {
         if(btnAdicionarLinha) btnAdicionarLinha.addEventListener("click", adicionarLinha);
         if(btnRemoverLinha) btnRemoverLinha.addEventListener("click", removerLinha);
     }
 
-    // Ativação limpa e segura do botão Excel
     if(btnBaixarExcel) {
-        // Remove qualquer lixo de memória duplicado clonando o botão
         btnBaixarExcel.replaceWith(btnBaixarExcel.cloneNode(true));
-        
-        // Seleciona novamente e aplica a ação perfeita
         const botaoExcelPronto = document.getElementById("btnBaixarExcel");
         if(botaoExcelPronto){
             botaoExcelPronto.addEventListener("click", () => {
@@ -590,7 +597,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Clique simulador para navegadores que bloqueiam som nativo
     setTimeout(() => {
         document.body.click();
     }, 1500);
