@@ -14,6 +14,7 @@ html,body{
     font-family:'Inter',sans-serif;
     background:#eef3f8;
     color:#243447;
+    padding-bottom: 80px;
 }
 
 /* ===========================
@@ -314,6 +315,9 @@ td:nth-child(4){
     padding:25px 30px;
 
     justify-content:center;
+    
+    /* ADICIONE ESTA LINHA: Garante que os botões fiquem acima do rodapé de notícias */
+    margin-bottom: 60px;
 
 }
 
