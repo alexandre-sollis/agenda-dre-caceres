@@ -63,6 +63,7 @@ const contadorEvento = document.getElementById("contadorEvento");
 
 const btnAdicionarLinha = document.getElementById("btnAdicionarLinha");
 const btnRemoverLinha = document.getElementById("btnRemoverLinha");
+const btnBaixarExcel = document.getElementById("btnBaixarExcel");
 
 /* =====================================================
    VARIÁVEIS DE CONTROLE
@@ -208,11 +209,6 @@ function removerLinha(){
     agendarSalvar();
 }
 
-if(!modoTV && btnAdicionarLinha && btnRemoverLinha){
-    btnAdicionarLinha.addEventListener("click", adicionarLinha);
-    btnRemoverLinha.addEventListener("click", removerLinha);
-}
-
 function lerTabela(){
     const agenda = [];
     tbody.querySelectorAll("tr").forEach(tr => {
@@ -230,6 +226,48 @@ function lerTabela(){
         }
     });
     return agenda;
+}
+
+function baixarExcelDoBanco() {
+    const dados = lerTabela();
+    if (dados.length === 0) {
+        alert("Não há dados na tabela para exportar.");
+        return;
+    }
+
+    // Estrutura o cabeçalho compatível com Excel
+    let csvConteudo = "\uFEFF"; // BOM UTF-8 (corrige acentos corrompidos no Windows)
+    csvConteudo += "INÍCIO;FIM;HORÁRIO;AVISO;PERÍODO;AÇÕES;RESPONSÁVEL\n";
+
+    // Mapeia todas as linhas
+    dados.forEach(item => {
+        csvConteudo += `"${item.inicio || ''}";"${item.fim || ''}";"${item.horario || ''}";"${item.aviso || '15'}";"${item.periodo || ''}";"${item.acao || ''}";"${item.responsavel || ''}"\n`;
+    });
+
+    // Executa o download nativo do navegador
+    const blob = new Blob([csvConteudo], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    
+    link.href = url;
+    link.download = `agenda_dre_caceres_${new Date().toLocaleDateString().replace(/\//g, '_')}.csv`;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// ATIVAÇÃO SEGURA DOS BOTÕES DO GERENCIADOR
+if(!modoTV) {
+    if(btnAdicionarLinha) btnAdicionarLinha.addEventListener("click", adicionarLinha);
+    if(btnRemoverLinha) btnRemoverLinha.addEventListener("click", removerLinha);
+}
+
+// O botão de baixar funciona em qualquer modo (inclusive na TV se necessário)
+if(btnBaixarExcel) {
+    btnBaixarExcel.addEventListener("click", baixarExcelDoBanco);
 }
 
 /* =====================================================
@@ -551,39 +589,3 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.click();
     }, 1500);
 });
-/* =====================================================
-   FUNÇÃO PARA EXPORTAR DADOS PARA EXCEL (CSV)
-===================================================== */
-const btnBaixarExcel = document.getElementById("btnBaixarExcel");
-
-if (btnBaixarExcel) {
-    btnBaixarExcel.addEventListener("click", () => {
-        const dados = lerTabela();
-        if (dados.length === 0) {
-            alert("Não há dados na tabela para exportar.");
-            return;
-        }
-
-        // Cabeçalho do arquivo Excel
-        let csvConteudo = "\uFEFF"; // Garante que o Excel entenda acentos (UTF-8)
-        csvConteudo += "INÍCIO;FIM;HORÁRIO;PERÍODO;AÇÕES;RESPONSÁVEL\n";
-
-        // Preenche as linhas com as informações digitadas
-        dados.forEach(item => {
-            csvConteudo += `"${item.inicio}";"${item.fim}";"${item.horario}";"${item.periodo}";"${item.acao}";"${item.responsavel}"\n`;
-        });
-
-        // Cria o arquivo para download automático no navegador
-        const blob = new Blob([csvConteudo], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        
-        link.setAttribute("href", url);
-        link.setAttribute("download", `agenda_dre_caceres_${new Date().toLocaleDateString().replace(/\//g, '_')}.csv`);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-}
