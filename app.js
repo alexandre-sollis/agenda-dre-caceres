@@ -17,7 +17,6 @@ async function ativarFocoTela() {
             wakeLock = await navigator.wakeLock.request('screen');
             console.log("Wake Lock ativo: A tela não irá entrar em repouso.");
 
-            // Se a página perder o foco (ex: aba oculta) e voltar, reativa o bloqueio
             document.addEventListener('visibilitychange', async () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') {
                     wakeLock = await navigator.wakeLock.request('screen');
@@ -33,11 +32,7 @@ async function ativarFocoTela() {
 
 if (modoTV) {
     document.body.classList.add("tv");
-
-    // Tenta ativar o Wake Lock imediatamente
     ativarFocoTela();
-
-    // Garante a ativação assim que houver qualquer clique ou toque na tela
     window.addEventListener('click', ativarFocoTela, { once: true });
     window.addEventListener('touchstart', ativarFocoTela, { once: true });
 }
@@ -91,7 +86,6 @@ function converterData(data){
     } else {
         return null;
     }
-    // Setamos 12h (meio-dia) para evitar flutuações de fuso horário que alteram o dia
     return new Date(a, m - 1, d, 12, 0, 0, 0);
 }
 
@@ -115,12 +109,12 @@ function converterDataHora(data, hora){
 
 function hojeZero(){
     const hoje = new Date();
-    hoje.setHours(12, 0, 0, 0); // Sincronizado com as 12h do converterData
+    hoje.setHours(12, 0, 0, 0);
     return hoje;
 }
 
 function formatarTempo(ms){
-    if(ms < 0) ms = 0;
+    if(ms < 0 || isNaN(ms)) ms = 0;
     const total = Math.floor(ms / 1000);
     const dias = Math.floor(total / 86400);
     const horas = Math.floor((total % 86400) / 3600);
@@ -158,7 +152,7 @@ function criarLinha(item = {
     acao: "",
     responsavel: ""
 }){
-    if (!template) return;
+    if (!template || !tbody) return;
 
     const clone = template.content.cloneNode(true);
     const tr = clone.querySelector("tr");
@@ -211,6 +205,7 @@ function removerLinha(){
 
 function lerTabela(){
     const agenda = [];
+    if(!tbody) return agenda;
     tbody.querySelectorAll("tr").forEach(tr => {
         const td = tr.querySelectorAll("td");
         if(td.length >= 7) {
@@ -235,16 +230,13 @@ function baixarExcelDoBanco() {
         return;
     }
 
-    // Estrutura o cabeçalho compatível com Excel
-    let csvConteudo = "\uFEFF"; // BOM UTF-8 (corrige acentos corrompidos no Windows)
+    let csvConteudo = "\uFEFF"; 
     csvConteudo += "INÍCIO;FIM;HORÁRIO;AVISO;PERÍODO;AÇÕES;RESPONSÁVEL\n";
 
-    // Mapeia todas as linhas
     dados.forEach(item => {
         csvConteudo += `"${item.inicio || ''}";"${item.fim || ''}";"${item.horario || ''}";"${item.aviso || '15'}";"${item.periodo || ''}";"${item.acao || ''}";"${item.responsavel || ''}"\n`;
     });
 
-    // Executa o download nativo do navegador
     const blob = new Blob([csvConteudo], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -257,17 +249,6 @@ function baixarExcelDoBanco() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-}
-
-// ATIVAÇÃO SEGURA DOS BOTÕES DO GERENCIADOR
-if(!modoTV) {
-    if(btnAdicionarLinha) btnAdicionarLinha.addEventListener("click", adicionarLinha);
-    if(btnRemoverLinha) btnRemoverLinha.addEventListener("click", removerLinha);
-}
-
-// O botão de baixar funciona em qualquer modo (inclusive na TV se necessário)
-if(btnBaixarExcel) {
-    btnBaixarExcel.addEventListener("click", baixarExcelDoBanco);
 }
 
 /* =====================================================
@@ -298,6 +279,7 @@ async function salvarFirebase(){
 }
 
 function desenharTabela(lista){
+    if(!tbody) return;
     const hoje = hojeZero();
 
     lista.sort((a, b) => {
@@ -335,6 +317,7 @@ function desenharTabela(lista){
 ===================================================== */
 
 function destacarEventos(){
+    if(!tbody) return;
     const hoje = hojeZero();
     tbody.querySelectorAll("tr").forEach(tr => {
         tr.classList.remove("evento-hoje");
@@ -351,6 +334,7 @@ function destacarEventos(){
 }
 
 function atualizarIndicadores(){
+    if(!tbody) return;
     const linhas = tbody.querySelectorAll("tr");
     if(totalEventos) totalEventos.textContent = linhas.length;
 
@@ -380,15 +364,12 @@ function atualizarIndicadores(){
 }
 
 function colorirLinhas(){
+    if(!tbody) return;
     const hoje = hojeZero();
 
     tbody.querySelectorAll("tr").forEach(tr => {
         tr.classList.remove(
-            "periodo-manha",
-            "periodo-tarde",
-            "periodo-noite",
-            "periodo-integral",
-            "evento-passado"
+            "periodo-manha", "periodo-tarde", "periodo-noite", "periodo-integral", "evento-passado"
         );
 
         const td = tr.querySelectorAll("td");
@@ -413,6 +394,7 @@ function colorirLinhas(){
 ===================================================== */
 
 function monitorarEventos(){
+    if(!tbody) return;
     const agora = new Date();
     let proximo = null;
     let menorTempo = Infinity;
@@ -432,12 +414,16 @@ function monitorarEventos(){
         const diferenca = inicio - agora;
 
         if(diferenca >= 0 && diferenca < menorTempo){
+            // Correção crucial: Se o aviso for inválido ou vazio, assume 15 por padrão para não quebrar
+            let minutosAviso = parseInt(td[3].textContent.trim(), 10);
+            if(isNaN(minutosAviso)) minutosAviso = 15;
+
             menorTempo = diferenca;
             proximo = {
                 linha: tr,
                 titulo: td[5].textContent.trim(),
                 horario: td[2].textContent.trim(),
-                aviso: parseInt(td[3].textContent.trim() || "15", 10),
+                aviso: minutosAviso,
                 inicio: inicio
             };
         }
@@ -454,7 +440,7 @@ function monitorarEventos(){
         textoBarra.textContent = `Próximo evento: ${proximo.titulo} • ${proximo.horario} • Faltam ${formatarTempo(menorTempo)}`;
     }
 
-    if(menorTempo <= 300000){ // Menos de 5 minutos faltantes
+    if(menorTempo <= 300000){ 
         proximo.linha.classList.add("evento-urgente");
     }
 
@@ -498,11 +484,10 @@ function tocarSom(){
     }, 3000);
 }
 
-// Executa verificação a cada 5 segundos de forma constante
 setInterval(monitorarEventos, 5000);
 
 /* =====================================================
-   LEITURA EM TEMPO REAL DO FIREBASE (ÚNICO LISTENER)
+   LEITURA EM TEMPO REAL DO FIREBASE
 ===================================================== */
 
 onSnapshot(agendaRef, async (snapshot) => {
@@ -520,7 +505,6 @@ onSnapshot(agendaRef, async (snapshot) => {
 
     if(json === ultimaVersao) return;
 
-    // Evita que o redesenho roube o foco enquanto o usuário ativamente digita no painel
     if (!modoTV && document.activeElement && document.activeElement.tagName === "TD") {
         return;
     }
@@ -528,22 +512,22 @@ onSnapshot(agendaRef, async (snapshot) => {
     ultimaVersao = json;
     desenharTabela(agenda);
 }, (erro) => {
-    console.error("Erro ao ler dados do Firebase (agenda/principal):", erro.code, erro.message);
+    console.error("Erro ao ler dados do Firebase:", erro.code, erro.message);
 });
 
 /* =====================================================
-   RECARREGAMENTO AUTOMÁTICO (FALHESAFE MODO TV)
+   RECARREGAMENTO AUTOMÁTICO (MODO TV)
 ===================================================== */
 
 if (modoTV) {
     setInterval(() => {
         console.log("Limpando cache e atualizando painel...");
         location.replace(location.href);
-    }, 15 * 60 * 1000); // 15 minutos
+    }, 15 * 60 * 1000); 
 }
 
 /* =====================================================
-   NOTÍCIAS G1 NO TICKER (CONTEÚDO DINÂMICO)
+   NOTÍCIAS G1 NO TICKER
 ===================================================== */
 
 const RSS_G1 = 'https://g1.globo.com/rss/g1/educacao/';
@@ -552,13 +536,10 @@ async function carregarNoticiasG1() {
     try {
         const url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(RSS_G1);
         const resposta = await fetch(url);
-
         if (!resposta.ok) throw new Error('Status HTTP ' + resposta.status);
 
         const dados = await resposta.json();
-        if (dados.status !== 'ok' || !dados.items?.length) {
-            throw new Error('Feed sem dados válidos ou status: ' + dados.status);
-        }
+        if (dados.status !== 'ok' || !dados.items?.length) throw new Error('Feed inválido');
 
         const manchetes = dados.items
             .slice(0, 8)
@@ -568,7 +549,6 @@ async function carregarNoticiasG1() {
         const avisosEl = document.getElementById('avisos');
         if (manchetes.length && avisosEl) {
             avisosEl.textContent = manchetes.map(m => `📰 ${m}`).join('     •     ');
-            console.log('Notícias G1 atualizadas com sucesso:', manchetes.length);
         }
     } catch (erro) {
         console.log('Não foi possível sincronizar notícias do G1:', erro.message);
@@ -579,12 +559,38 @@ setInterval(() => {
     document.title = "Agenda " + Date.now();
 }, 30000);
 
-// Inicializadores
-carregarNoticiasG1();
-setInterval(carregarNoticiasG1, 10 * 60 * 1000); // Atualiza notícias a cada 10 minutos
+/* =====================================================
+   INICIALIZAÇÃO E ASSINATURA DOS BOTÕES (APÓS DOM)
+===================================================== */
 
-// Clique simulado de fall-back inicial para navegadores rígidos que precisam de toque
 document.addEventListener("DOMContentLoaded", () => {
+    // Carrega notícias
+    carregarNoticiasG1();
+    setInterval(carregarNoticiasG1, 10 * 60 * 1000);
+
+    // Ativa os botões normais do painel admin
+    if(!modoTV) {
+        if(btnAdicionarLinha) btnAdicionarLinha.addEventListener("click", adicionarLinha);
+        if(btnRemoverLinha) btnRemoverLinha.addEventListener("click", removerLinha);
+    }
+
+    // Ativação limpa e segura do botão Excel
+    if(btnBaixarExcel) {
+        // Remove qualquer lixo de memória duplicado clonando o botão
+        btnBaixarExcel.replaceWith(btnBaixarExcel.cloneNode(true));
+        
+        // Seleciona novamente e aplica a ação perfeita
+        const botaoExcelPronto = document.getElementById("btnBaixarExcel");
+        if(botaoExcelPronto){
+            botaoExcelPronto.addEventListener("click", () => {
+                alert("Iniciando o download do arquivo...");
+                baixarExcelDoBanco();
+            });
+            console.log("Sistema de download ativado com sucesso.");
+        }
+    }
+
+    // Clique simulador para navegadores que bloqueiam som nativo
     setTimeout(() => {
         document.body.click();
     }, 1500);
