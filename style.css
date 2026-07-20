@@ -729,3 +729,8 @@ text-align:center;
     }
 
 }
+
+/* Quando o body tiver a classe .tv, esconde os botões de gerenciamento */
+body.tv .toolbar-bottom button:not(#btnBaixarExcel) {
+    display: none !important;
+}
