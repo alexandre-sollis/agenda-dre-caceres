@@ -16,7 +16,7 @@ async function ativarFocoTela() {
         try {
             wakeLock = await navigator.wakeLock.request('screen');
             console.log("Wake Lock ativo: A tela não irá entrar em repouso.");
-            
+
             // Se a página perder o foco (ex: aba oculta) e voltar, reativa o bloqueio
             document.addEventListener('visibilitychange', async () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') {
@@ -33,10 +33,10 @@ async function ativarFocoTela() {
 
 if (modoTV) {
     document.body.classList.add("tv");
-    
+
     // Tenta ativar o Wake Lock imediatamente
     ativarFocoTela();
-    
+
     // Garante a ativação assim que houver qualquer clique ou toque na tela
     window.addEventListener('click', ativarFocoTela, { once: true });
     window.addEventListener('touchstart', ativarFocoTela, { once: true });
@@ -158,7 +158,7 @@ function criarLinha(item = {
     responsavel: ""
 }){
     if (!template) return;
-    
+
     const clone = template.content.cloneNode(true);
     const tr = clone.querySelector("tr");
     const td = tr.querySelectorAll("td");
@@ -258,30 +258,6 @@ async function salvarFirebase(){
     }
     salvando = false;
 }
-
-onSnapshot(agendaRef, async (snapshot) => {
-    if(!snapshot.exists()){
-        await setDoc(agendaRef, {
-            agenda: [],
-            atualizadoEm: new Date().toISOString()
-        });
-        return;
-    }
-
-    const dados = snapshot.data();
-    const agenda = dados.agenda || [];
-    const json = JSON.stringify(agenda);
-
-    if(json === ultimaVersao) return;
-    
-    // Evita que o redesenho roube o foco enquanto o usuário ativamente digita no painel
-    if (!modoTV && document.activeElement && document.activeElement.tagName === "TD") {
-        return; 
-    }
-
-    ultimaVersao = json;
-    desenharTabela(agenda);
-});
 
 function desenharTabela(lista){
     const hoje = hojeZero();
@@ -486,6 +462,36 @@ function tocarSom(){
 
 // Executa verificação a cada 5 segundos de forma constante
 setInterval(monitorarEventos, 5000);
+
+/* =====================================================
+   LEITURA EM TEMPO REAL DO FIREBASE (ÚNICO LISTENER)
+===================================================== */
+
+onSnapshot(agendaRef, async (snapshot) => {
+    if(!snapshot.exists()){
+        await setDoc(agendaRef, {
+            agenda: [],
+            atualizadoEm: new Date().toISOString()
+        });
+        return;
+    }
+
+    const dados = snapshot.data();
+    const agenda = dados.agenda || [];
+    const json = JSON.stringify(agenda);
+
+    if(json === ultimaVersao) return;
+
+    // Evita que o redesenho roube o foco enquanto o usuário ativamente digita no painel
+    if (!modoTV && document.activeElement && document.activeElement.tagName === "TD") {
+        return;
+    }
+
+    ultimaVersao = json;
+    desenharTabela(agenda);
+}, (erro) => {
+    console.error("Erro ao ler dados do Firebase (agenda/principal):", erro.code, erro.message);
+});
 
 /* =====================================================
    RECARREGAMENTO AUTOMÁTICO (FALHESAFE MODO TV)
