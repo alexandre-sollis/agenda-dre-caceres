@@ -184,17 +184,18 @@ header{
 
 .table-container{
 
-    margin:0 30px;
+    margin: 0 30px;
 
-    background:white;
+    background: white;
 
-    border-radius:20px;
+    border-radius: 20px;
 
-    overflow:hidden;
+    overflow: hidden;
 
-    box-shadow:0 12px 30px rgba(0,0,0,.08);
-   
-    margin-bottom: 90px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.08);
+    
+    /* AUMENTE ESTE VALOR: Isso empurra os botões para baixo da tabela */
+    margin-bottom: 140px;
 
 }
 
@@ -308,15 +309,15 @@ td:nth-child(4){
 
 .toolbar-bottom{
 
-    display:flex;
+    display: flex;
 
-    gap:15px;
+    gap: 15px;
 
-    padding:25px 30px;
+    padding: 25px 30px;
 
-    justify-content:center;
+    justify-content: center;
     
-    /* ADICIONE ESTA LINHA: Garante que os botões fiquem acima do rodapé de notícias */
+    /* ADICIONE ESTA LINHA: Evita que os botões fiquem colados no rodapé */
     margin-bottom: 60px;
 
 }
