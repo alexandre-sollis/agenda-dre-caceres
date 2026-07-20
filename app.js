@@ -584,6 +584,20 @@ document.addEventListener("DOMContentLoaded", () => {
         if(btnAdicionarLinha) btnAdicionarLinha.addEventListener("click", adicionarLinha);
         if(btnRemoverLinha) btnRemoverLinha.addEventListener("click", removerLinha);
     }
+    if (btnImportarExcel) {
+        // Evita duplicados clonando o botão se necessário
+        btnImportarExcel.replaceWith(btnImportarExcel.cloneNode(true));
+        const botaoImportarPronto = document.getElementById("btnImportarExcel");
+
+        if (botaoImportarPronto && !modoTV) {
+            botaoImportarPronto.addEventListener("click", () => {
+                inputArquivo.click(); // Abre a janela de seleção de arquivo
+            });
+
+            inputArquivo.addEventListener("change", importarCSV);
+            console.log("Sistema de importação de CSV ativado com sucesso.");
+        }
+    }
 
     if(btnBaixarExcel) {
         btnBaixarExcel.replaceWith(btnBaixarExcel.cloneNode(true));
