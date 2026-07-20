@@ -640,30 +640,33 @@ document.addEventListener("DOMContentLoaded", () => {
         if(btnRemoverLinha) btnRemoverLinha.addEventListener("click", removerLinha);
     }
 
+    // CORREÇÃO: Vinculação correta do Botão de Importar
     if (btnImportarExcel) {
-        btnImportarExcel.replaceWith(btnImportarExcel.cloneNode(true));
-        const botaoImportarPronto = document.getElementById("btnImportarExcel");
+        // Remove ouvintes antigos substituindo pelo clone
+        const novoBotaoImportar = btnImportarExcel.cloneNode(true);
+        btnImportarExcel.replaceWith(novoBotaoImportar);
 
-        if (botaoImportarPronto && !modoTV) {
-            botaoImportarPronto.addEventListener("click", () => {
-                inputArquivo.click(); 
+        if (!modoTV) {
+            novoBotaoImportar.addEventListener("click", () => {
+                inputArquivo.click(); // Abre a janela de seleção
             });
-
+            
+            // O input precisa escutar a mudança AQUI para garantir o escopo
             inputArquivo.addEventListener("change", importarCSV);
             console.log("Sistema de importação de CSV ativado com sucesso.");
         }
     }
 
-    if(btnBaixarExcel) {
-        btnBaixarExcel.replaceWith(btnBaixarExcel.cloneNode(true));
-        const botaoExcelPronto = document.getElementById("btnBaixarExcel");
-        if(botaoExcelPronto){
-            botaoExcelPronto.addEventListener("click", () => {
-                alert("Iniciando o download do arquivo...");
-                baixarExcelDoBanco();
-            });
-            console.log("Sistema de download ativado com sucesso.");
-        }
+    // CORREÇÃO: Vinculação correta do Botão de Exportar
+    if (btnBaixarExcel) {
+        const novoBotaoExcel = btnBaixarExcel.cloneNode(true);
+        btnBaixarExcel.replaceWith(novoBotaoExcel);
+        
+        novoBotaoExcel.addEventListener("click", () => {
+            // Executa a função diretamente buscando o estado atual do DOM
+            baixarExcelDoBanco();
+        });
+        console.log("Sistema de download ativado com sucesso.");
     }
 
     setTimeout(() => {
