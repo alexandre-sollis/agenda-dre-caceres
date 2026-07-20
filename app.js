@@ -551,3 +551,39 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.click();
     }, 1500);
 });
+/* =====================================================
+   FUNÇÃO PARA EXPORTAR DADOS PARA EXCEL (CSV)
+===================================================== */
+const btnBaixarExcel = document.getElementById("btnBaixarExcel");
+
+if (btnBaixarExcel) {
+    btnBaixarExcel.addEventListener("click", () => {
+        const dados = lerTabela();
+        if (dados.length === 0) {
+            alert("Não há dados na tabela para exportar.");
+            return;
+        }
+
+        // Cabeçalho do arquivo Excel
+        let csvConteudo = "\uFEFF"; // Garante que o Excel entenda acentos (UTF-8)
+        csvConteudo += "INÍCIO;FIM;HORÁRIO;PERÍODO;AÇÕES;RESPONSÁVEL\n";
+
+        // Preenche as linhas com as informações digitadas
+        dados.forEach(item => {
+            csvConteudo += `"${item.inicio}";"${item.fim}";"${item.horario}";"${item.periodo}";"${item.acao}";"${item.responsavel}"\n`;
+        });
+
+        // Cria o arquivo para download automático no navegador
+        const blob = new Blob([csvConteudo], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `agenda_dre_caceres_${new Date().toLocaleDateString().replace(/\//g, '_')}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}
