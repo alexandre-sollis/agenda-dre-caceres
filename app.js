@@ -602,7 +602,7 @@ if (modoTV) {
    NOTÍCIAS G1 NO TICKER
 ===================================================== */
 
-const RSS_G1 = 'https://g1.globo.com/rss/g1/educacao/';
+const RSS_G1 = 'https://g1.globo.com/rss/g1/';
 
 async function carregarNoticiasG1() {
     try {
