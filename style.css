@@ -1,19 +1,20 @@
 /* ===========================
-   RESET
+   RESET E CONFIGURAÇÕES GERAIS
 =========================== */
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background .25s, color .25s, border-color .25s, box-shadow .25s;
 }
 
-html,body{
-    width:100%;
-    height:100%;
-    font-family:'Inter',sans-serif;
-    background:#eef3f8;
-    color:#243447;
+html, body {
+    width: 100%;
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: #eef3f8;
+    color: #243447;
     padding-bottom: 80px;
 }
 
@@ -21,54 +22,54 @@ html,body{
    FUNDO
 =========================== */
 
-.background{
-    position:fixed;
-    inset:0;
+.background {
+    position: fixed;
+    inset: 0;
     background:
-    radial-gradient(circle at top right,#1d5fbf22,transparent 35%),
-    radial-gradient(circle at bottom left,#1976d222,transparent 35%),
-    #eef3f8;
-    z-index:-1;
+        radial-gradient(circle at top right, #2563eb10, transparent 40%),
+        radial-gradient(circle at bottom left, #0ea5e910, transparent 35%),
+        #F5F7FB;
+    z-index: -1;
 }
 
 /* ===========================
-   HEADER
+   HEADER (CABEÇALHO)
 =========================== */
 
-header{
-
-    height:100px;
-
-    background:linear-gradient(90deg,#0d47a1,#1565c0);
-
-    color:white;
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    padding:0 40px;
-
-    box-shadow:0 5px 20px rgba(0,0,0,.15);
-
+header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 90px;
+    background: linear-gradient(
+        135deg,
+        #5E35B1,
+        #1E3A8A,
+        #2563EB 60%,
+        #3B82F6
+    );
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, .15);
+    border-radius: 0 0 1px 1px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 48px;
+    box-shadow: 0 12px 35px rgba(30, 64, 175, .18);
 }
 
-.logo-area{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:18px;
-
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 18px;
 }
+
 .logo {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 64px; /* ajuste conforme o tamanho do seu header */
+    height: 64px;
 }
 
 .logo img {
@@ -78,675 +79,533 @@ header{
     display: block;
 }
 
-.logo-area h1{
-
-    font-size:34px;
-
-    font-weight:700;
-
+.logo-area h1 {
+    font-size: 34px;
+    font-weight: 700;
 }
 
-.logo-area p{
-
-    opacity:.85;
-
-    margin-top:4px;
-
+.logo-area p {
+    opacity: .85;
+    margin-top: 4px;
 }
 
-.clock-area{
-
-    text-align:right;
-
+.clock-area {
+    text-align: right;
 }
 
-#clock{
-
-    font-size:52px;
-
-    font-weight:700;
-
-    letter-spacing:2px;
-
+#clock {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: 2px;
 }
 
-#date{
-
-    margin-top:4px;
-
-    font-size:18px;
-
+#date {
+    margin-top: 4px;
+    font-size: 18px;
 }
 
 /* ===========================
-   DASHBOARD
+   DASHBOARD / CARDS
 =========================== */
 
-.dashboard{
-
-    display:grid;
-
-    grid-template-columns:repeat(4,1fr);
-
-    gap:20px;
-
-    padding:25px 30px;
-
+.dashboard {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    padding: 25px 30px;
+    position: sticky;
+    top: 90px;
+    z-index: 90;
+    background: #F5F7FB;
+    box-shadow: 0 12px 16px -12px rgba(15, 23, 42, .12);
 }
 
-.card{
-
-    background:white;
-
-    border-radius:18px;
-
-    padding:12px 20px;
-
-    box-shadow:0 10px 25px rgba(0,0,0,.08);
-
-    transition:.25s;
-
-    text-align:center;
-
+.stat-card {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: #FFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 18px;
+    padding: 22px 28px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .05);
 }
 
-.card:hover{
-
-    transform:translateY(-4px);
-
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgba(37, 99, 235, .12);
 }
 
-.card h3{
-
-    color:#5d6d7e;
-
-    font-size:16px;
-
+.stat-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
 }
 
-.card span{
+.stat-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+    line-height: 1;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #EEF2FF;
+}
 
-    display:block;
+.stat-icon.icon-blue { background: #EEF4FF; }
+.stat-icon.icon-green { background: #ECFDF5; }
+.stat-icon.icon-orange { background: #FFF4E6; }
 
-    margin-top:6px;
+.stat-label {
+    font-size: 28px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    white-space: nowrap;
+}
 
-    font-size:34px;
+.stat-label2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    white-space: nowrap;
+    text-align: center;
+    line-height: 1.5;
+}
 
-    font-weight:700;
+.stat-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: #2660E0;
+    line-height: 1;
+    white-space: nowrap;
+    min-width: 0;
+}
 
-    color:#1565c0;
+.stat-card-lg {
+    justify-content: space-between;
+}
 
+.stat-value-lg {
+    font-size: 68px;
+}
+
+/* --- ESTILO DO CARD COM LINK / GRADIENTE --- */
+
+.stat-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    flex: 1;
+}
+
+.stat-card.card-gradient {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(135deg, #860381 0%, #1e88e5 100%);
+    color: #000000;
+    border-radius: 18px;
+    padding: 20px;
+    cursor: pointer;
+}
+
+.stat-card.card-gradient:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(21, 101, 192, 0.35);
+    background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+    
+}
+
+.dashboard-actions {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-baixar-excel {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #16A34A;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 0 26px;
+    height: 52px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(22, 163, 74, .2);
+}
+
+.btn-baixar-excel:hover {
+    background: #15803D;
+    transform: translateY(-3px);
+}
+
+.btn-novo-evento {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #2563EB;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 0 26px;
+    height: 52px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, .25);
+}
+
+.btn-novo-evento:hover {
+    background: #1D4ED8;
+    transform: translateY(-3px);
 }
 
 /* ===========================
    TABELA
 =========================== */
 
-.table-container{
-
-    margin: 0 30px;
-
+.table-container {
+    margin: 0 30px 20px 30px;
     background: white;
-
     border-radius: 20px;
-
-    /* ISSO CRIA A ROLAGEM INTERNA NA TABELA: */
     overflow-y: auto; 
-    
-    /* Define uma altura máxima segura para a tabela não empurrar os botões */
     max-height: calc(100vh - 360px); 
-
-    box-shadow: 0 12px 30px rgba(0,0,0,.08);
-    
-    margin-bottom: 20px;
-
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .08);
 }
 
-table{
-
-    width:100%;
-
-    border-collapse:collapse;
-
+table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-thead{
-
-    background:#1565c0;
-
-    color:white;
-
+thead {
+    background: #1565c0;
+    color: white;
 }
 
-th{
-
-    padding:18px;
-
-    font-size:18px;
-
-    text-transform:uppercase;
-
-    letter-spacing:1px;
-
-    border-right:1px solid rgba(255,255,255,.25);
-
+th {
+    padding: 18px;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-right: 1px solid rgba(255, 255, 255, .25);
 }
 
-th:last-child{
-
-    border-right:none;
-
+th:last-child {
+    border-right: none;
 }
 
-td{
-
-    padding:16px;
-
-    font-size:30px;
-
-    border-bottom:1px solid #d5dce3;
-
-    border-right:1px solid #e4e9ee;
-
+td {
+    padding: 16px;
+    font-size: 30px;
+    border-bottom: 1px solid #d5dce3;
+    border-right: 1px solid #e4e9ee;
 }
 
-td:last-child{
-
-    border-right:none;
-
+td:last-child {
+    border-right: none;
 }
 
-tbody tr{
-
-    transition:.2s;
-
+tbody tr:nth-child(even) {
+    background: #fafbfd;
 }
 
-tbody tr:nth-child(even){
-
-    background:#fafbfd;
-
+tbody tr:hover {
+    background: #eaf4ff;
 }
 
-tbody tr:hover{
-
-    background:#eaf4ff;
-
+td[contenteditable="true"] {
+    outline: none;
 }
 
-td[contenteditable="true"]{
-
-    outline:none;
-
-}
-
-td[contenteditable="true"]:focus{
-
-    background:#fffde7;
-
+td[contenteditable="true"]:focus {
+    background: #fffde7;
 }
 
 /* Colunas estreitas: Início, Fim, Horário */
-th:nth-child(1),
-th:nth-child(2),
-th:nth-child(3),
-td:nth-child(1),
-td:nth-child(2),
-td:nth-child(3){
-
-    text-align:center;
-
+th:nth-child(1), th:nth-child(2), th:nth-child(3),
+td:nth-child(1), td:nth-child(2), td:nth-child(3) {
+    text-align: center;
 }
 
-/* Coluna Aviso oculta (usada apenas internamente) */
-th:nth-child(4),
-td:nth-child(4){
-
-    display:none;
-
+/* Coluna Aviso oculta */
+th:nth-child(4), td:nth-child(4) {
+    display: none;
 }
 
 /* ===========================
-   BOTÕES
+   BOTÕES E BARRA INFERIOR
 =========================== */
 
-.toolbar-bottom{
-
+.toolbar-bottom {
     display: flex;
-
     gap: 15px;
-
     padding: 15px 30px;
-
     justify-content: center;
-    
-    /* FIXAR ACIMA DO FOOTER AZUL: */
     position: fixed;
-    bottom: 55px; /* Altura exata do seu footer */
+    bottom: 55px;
     left: 0;
     right: 0;
-    background: #eef3f8; /* Cor idêntica ao fundo da página para camuflar */
-    z-index: 998; /* Fica acima da tabela, mas abaixo de modais/alertas */
-    box-shadow: 0 -10px 20px rgba(238, 243, 248, 0.9); /* Suaviza o encontro com a tabela */
-
+    background: #eef3f8;
+    z-index: 998;
+    box-shadow: 0 -10px 20px rgba(238, 243, 248, 0.9);
 }
 
-button{
-
-    border:none;
-
-    border-radius:12px;
-
-    padding:13px 22px;
-
-    cursor:pointer;
-
-    font-size:16px;
-
-    font-weight:600;
-
-    transition:.25s;
-
+button {
+    border: none;
+    height: 52px;
+    min-width: 180px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    padding: 13px 22px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
 }
 
-#btnAdicionarLinha{
-
-    background:#1565c0;
-
-    color:white;
-
+button::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .25), transparent);
+    transition: .5s;
 }
 
-#btnAdicionarLinha:hover{
-
-    background:#0d47a1;
-
+button:hover {
+    transform: translateY(-3px);
 }
 
-#btnRemoverLinha{
-
-    background:#e53935;
-
-    color:white;
-
+button:hover::after {
+    left: 100%;
 }
 
-#btnRemoverLinha:hover{
-
-    background:#b71c1c;
-
+#btnAdicionarLinha {
+    background: #1565c0;
+    color: white;
 }
 
-.remover{
-
-    background:#e53935;
-
-    color:white;
-
-    padding:8px 12px;
-
+#btnAdicionarLinha:hover {
+    background: #0d47a1;
 }
 
-.remover:hover{
-
-    background:#b71c1c;
-
+#btnRemoverLinha {
+    background: #e53935;
+    color: white;
 }
 
-/* ===========================
-   FOOTER
-=========================== */
-
-footer{
-
-    position:fixed;
-
-    bottom:0;
-
-    left:0;
-
-    right:0;
-
-    background:#0d47a1;
-
-    color:white;
-
-    height:55px;
-
-    display:flex;
-
-    align-items:center;
-
-    overflow:hidden;
-
+#btnRemoverLinha:hover {
+    background: #b71c1c;
 }
 
-.ticker{
-
-    width:100%;
-
-    overflow:hidden;
-
+.remover {
+    background: #e53935;
+    color: white;
+    padding: 8px 12px;
 }
 
-#avisos{
-
-    white-space:nowrap;
-
-    display:inline-block;
-
-    padding-left:100%;
-
-    animation:ticker 60s linear infinite;
-
-    font-size:30px;
-
-}
-
-@keyframes ticker{
-
-    from{
-
-        transform:translateX(0);
-
-    }
-
-    to{
-
-        transform:translateX(-100%);
-
-    }
-
+.remover:hover {
+    background: #b71c1c;
 }
 
 /* ===========================
-   TV
+   FOOTER E TICKER
 =========================== */
 
-body.tv .toolbar-bottom{
-
-    display:none;
-
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0d47a1;
+    color: white;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
 }
 
-body.tv td{
-
-    font-size:36px;
-
+.ticker {
+    width: 100%;
+    overflow: hidden;
 }
 
-body.tv th{
-
-    font-size:26px;
-
+#avisos {
+    white-space: nowrap;
+    display: inline-block;
+    padding-left: 100%;
+    animation: ticker 60s linear infinite;
+    font-size: 30px;
 }
 
-body.tv #clock{
-
-    font-size:70px;
-
-}
-
-body.tv #date{
-
-    font-size:24px;
-
-}
-
-body.tv .card span{
-
-    font-size:54px;
-
+@keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
 }
 
 /* ===========================
-   RESPONSIVO
-=========================== */
-
-@media(max-width:1100px){
-
-.dashboard{
-
-grid-template-columns:repeat(2,1fr);
-
-}
-
-header{
-
-flex-direction:column;
-
-height:auto;
-
-padding:20px;
-
-gap:10px;
-
-}
-
-.clock-area{
-
-text-align:center;
-
-}
-
-}
-/* ===========================
-   ALERTA
-=========================== */
-
-.alerta{
-
-    position:fixed;
-
-    inset:0;
-
-    background:rgba(0,0,0,.75);
-
-    display:none;
-
-    justify-content:center;
-
-    align-items:center;
-
-    z-index:9999;
-
-}
-
-.alerta-box{
-
-    background:white;
-
-    width:700px;
-
-    border-radius:20px;
-
-    padding:40px;
-
-    text-align:center;
-
-    box-shadow:0 20px 60px rgba(0,0,0,.35);
-
-}
-
-.alerta-box h1{
-
-    color:#1565c0;
-
-    font-size:42px;
-
-}
-
-.alerta-box h2{
-
-    margin:30px 0;
-
-    font-size:34px;
-
-}
-
-.alerta-box p{
-
-    font-size:26px;
-
-}
-
-#contadorEvento{
-
-    margin-top:30px;
-
-    font-size:60px;
-
-    color:#ff9800;
-
-    font-weight:bold;
-
-}
-/* ==================================
    BARRA DO PRÓXIMO EVENTO
-================================== */
+=========================== */
 
-#barraEvento{
-
-    height:50px;
-
-    background:#1565c0;
-
-    color:white;
-
-    display:flex;
-
-    justify-content:center;
-
-    align-items:center;
-
-    font-size:22px;
-
-    font-weight:600;
-
-    overflow:hidden;
-
+#barraEvento {
+    height: 50px;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 35px;
+    font-weight: 600;
+    overflow: hidden;
 }
 
-#textoBarra{
-
-    animation:deslizar 18s linear infinite;
-
-    white-space:nowrap;
-
+#textoBarra {
+    animation: deslizar 18s linear infinite;
+    white-space: nowrap;
 }
 
-@keyframes deslizar{
-
-    from{
-
-        transform:translateX(100%);
-
-    }
-
-    to{
-
-        transform:translateX(-100%);
-
-    }
-
+@keyframes deslizar {
+    from { transform: translateX(100%); }
+    to { transform: translateX(-100%); }
 }
 
-/* ==================================
-   EVENTO INICIANDO
-================================== */
+/* ===========================
+   ESTADOS DE EVENTOS
+=========================== */
 
-.evento-urgente{
-
-    background:#ffebee !important;
-
-    animation:piscando 1s infinite;
-
+.evento-urgente {
+    background: #ffebee !important;
+    animation: pulsar 1s infinite;
 }
 
-.evento-urgente td{
-
-    background:transparent;
-
+.evento-urgente td {
+    background: transparent;
 }
 
-@keyframes piscando{
-
-    0%{
-
-        opacity:1;
-
-    }
-
-    50%{
-
-        opacity:.45;
-
-    }
-
-    100%{
-
-        opacity:1;
-
-    }
-
-}
-.evento-hoje{
-
-    background:#FFF8E1 !important;
-
-    border-left:8px solid #FF9800;
-
-    font-weight:600;
-
+.evento-hoje {
+    background: #FFF8E1 !important;
+    border-left: 8px solid #FF9800;
+    font-weight: 600;
 }
 
-.evento-hoje td{
-
-    background:transparent;
-
-}
-.periodo-manha{
-    border-left:8px solid #42A5F5;
+.evento-hoje td {
+    background: transparent;
 }
 
-.periodo-tarde{
-    border-left:8px solid #FB8C00;
+.periodo-manha { border-left: 8px solid #42A5F5; }
+.periodo-tarde { border-left: 8px solid #FB8C00; }
+.periodo-noite { border-left: 8px solid #5E35B1; }
+.periodo-integral { border-left: 8px solid #2E7D32; }
+
+.evento-passado {
+    opacity: .55;
+    background: #f3f3f3;
 }
 
-.periodo-noite{
-    border-left:8px solid #5E35B1;
+@keyframes pulsar {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.01); }
+    100% { transform: scale(1); }
 }
 
-.periodo-integral{
-    border-left:8px solid #2E7D32;
+/* ===========================
+   ALERTA MODAL
+=========================== */
+
+.alerta {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .75);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
 }
 
-.evento-passado{
-    opacity:.55;
-    background:#f3f3f3;
+.alerta-box {
+    background: white;
+    width: 700px;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
 }
 
-.evento-urgente{
-    animation:pulsar 1s infinite;
+.alerta-box h1 {
+    color: #1565c0;
+    font-size: 42px;
 }
 
-@keyframes pulsar{
-
-    0%{
-        transform:scale(1);
-    }
-
-    50%{
-        transform:scale(1.01);
-    }
-
-    100%{
-        transform:scale(1);
-    }
-
+.alerta-box h2 {
+    margin: 30px 0;
+    font-size: 34px;
 }
 
-/* Quando o body tiver a classe .tv, esconde os botões de gerenciamento */
+.alerta-box p {
+    font-size: 26px;
+}
+
+#contadorEvento {
+    margin-top: 30px;
+    font-size: 60px;
+    color: #ff9800;
+    font-weight: bold;
+}
+
+/* ===========================
+   MODO TV & RESPONSIVO
+=========================== */
+
+body.tv .toolbar-bottom,
 body.tv .toolbar-bottom button:not(#btnBaixarExcel) {
     display: none !important;
+}
+
+body.tv td { font-size: 36px; }
+body.tv th { font-size: 26px; }
+body.tv #clock { font-size: 70px; }
+body.tv #date { font-size: 24px; }
+body.tv .card span { font-size: 54px; }
+
+@media (max-width: 1100px) {
+    .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    header {
+        flex-direction: column;
+        height: auto;
+        padding: 20px;
+        gap: 10px;
+    }
+
+    .clock-area {
+        text-align: center;
+    }
 }
