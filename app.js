@@ -905,33 +905,104 @@ if (modoTV) {
    NOTÍCIAS G1 NO TICKER
 =========================== */
 
-const RSS_G1 = 'https://g1.globo.com/rss/g1/educacao/'; 
-// troque por 'https://g1.globo.com/rss/g1/' se quiser notícias gerais, 
+const RSS_G1 = 'https://g1.globo.com/rss/g1/educacao/';
+// troque por 'https://g1.globo.com/rss/g1/' se quiser notícias gerais,
 // em vez de só educação
 
-async function carregarNoticiasG1() {
-    try {
-        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(RSS_G1);
-        const resposta = await fetch(proxy);
-        const textoXml = await resposta.text();
+// Extrai os títulos de um XML de RSS (string) já resolvido
+function extrairManchetesDeXml(textoXml) {
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(textoXml, 'text/xml');
 
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(textoXml, 'text/xml');
-        const itens = xml.querySelectorAll('item');
-
-        const manchetes = Array.from(itens)
-            .slice(0, 8)
-            .map(item => item.querySelector('title')?.textContent.trim())
-            .filter(Boolean);
-
-        if (manchetes.length) {
-            document.getElementById('avisos').textContent =
-                manchetes.map(m => `📰 ${m}`).join('     •     ');
-        }
-    } catch (erro) {
-        console.log('Não foi possível carregar notícias do G1:', erro);
-        // mantém o texto atual do ticker se der erro
+    // Se o parser encontrar um erro de sintaxe, o XML retornado contém <parsererror>
+    if (xml.querySelector('parsererror')) {
+        throw new Error('XML inválido/parsererror ao interpretar o RSS.');
     }
+
+    const itens = xml.querySelectorAll('item');
+
+    return Array.from(itens)
+        .slice(0, 8)
+        .map(item => item.querySelector('title')?.textContent.trim())
+        .filter(Boolean);
+}
+
+// Fonte 1: rss2json — feito especificamente para converter RSS em JSON,
+// mais estável que proxies genéricos de CORS.
+async function buscarViaRss2json() {
+    const url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(RSS_G1);
+    const resposta = await fetch(url);
+
+    if (!resposta.ok) {
+        throw new Error(`rss2json respondeu status ${resposta.status}`);
+    }
+
+    const dados = await resposta.json();
+
+    if (dados.status !== 'ok' || !Array.isArray(dados.items)) {
+        throw new Error('rss2json não retornou itens válidos: ' + JSON.stringify(dados).slice(0, 200));
+    }
+
+    return dados.items
+        .slice(0, 8)
+        .map(item => (item.title || '').trim())
+        .filter(Boolean);
+}
+
+// Fonte 2 (fallback): allorigins — usado apenas se o rss2json falhar
+async function buscarViaAllorigins() {
+    const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(RSS_G1);
+    const resposta = await fetch(proxy);
+
+    if (!resposta.ok) {
+        throw new Error(`allorigins respondeu status ${resposta.status}`);
+    }
+
+    const textoXml = await resposta.text();
+    return extrairManchetesDeXml(textoXml);
+}
+
+// Fonte 3 (fallback final): corsproxy.io
+async function buscarViaCorsproxy() {
+    const proxy = 'https://corsproxy.io/?url=' + encodeURIComponent(RSS_G1);
+    const resposta = await fetch(proxy);
+
+    if (!resposta.ok) {
+        throw new Error(`corsproxy.io respondeu status ${resposta.status}`);
+    }
+
+    const textoXml = await resposta.text();
+    return extrairManchetesDeXml(textoXml);
+}
+
+async function carregarNoticiasG1() {
+    const fontes = [
+        { nome: 'rss2json', buscar: buscarViaRss2json },
+        { nome: 'allorigins', buscar: buscarViaAllorigins },
+        { nome: 'corsproxy.io', buscar: buscarViaCorsproxy }
+    ];
+
+    for (const fonte of fontes) {
+        try {
+            const manchetes = await fonte.buscar();
+
+            if (manchetes.length) {
+                document.getElementById('avisos').textContent =
+                    manchetes.map(m => `📰 ${m}`).join('     •     ');
+
+                console.log(`Notícias carregadas via ${fonte.nome} (${manchetes.length} itens).`);
+                return; // sucesso — não tenta as próximas fontes
+            }
+
+            console.log(`Fonte ${fonte.nome} respondeu, mas sem manchetes.`);
+
+        } catch (erro) {
+            console.log(`Falha ao carregar notícias via ${fonte.nome}:`, erro.message || erro);
+            // tenta a próxima fonte da lista
+        }
+    }
+
+    console.log('Não foi possível carregar notícias do G1 em nenhuma fonte. Mantendo texto atual do ticker.');
 }
 
 carregarNoticiasG1();
