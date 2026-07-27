@@ -67,9 +67,19 @@ const inputImportarExcel = document.getElementById("inputImportarExcel");
 ===================================================== */
 
 let salvando = false;
+let salvarNovamente = false; // fica true se chegou edição nova enquanto já salvava
 let timeoutSalvar = null;
 let ultimaVersao = "";
 let ultimoAviso = "";
+let tentativasErro = 0;
+
+const statusSalvar = document.getElementById("statusSalvar");
+
+function definirStatusSalvar(texto, tipo){
+    if(!statusSalvar) return;
+    statusSalvar.textContent = texto;
+    statusSalvar.className = "status-salvar" + (tipo ? " status-" + tipo : "");
+}
 
 
 /* =====================================================
@@ -509,6 +519,8 @@ function lerTabela(){
 
 function agendarSalvar(){
 
+    definirStatusSalvar("Alterações pendentes…", "pendente");
+
     clearTimeout(timeoutSalvar);
 
     timeoutSalvar = setTimeout(()=>{
@@ -521,9 +533,17 @@ function agendarSalvar(){
 
 async function salvarFirebase(){
 
-    if(salvando) return;
+    // Em vez de descartar esta chamada, marca para rodar de novo
+    // assim que o salvamento atual terminar. Antes, isso era perdido.
+    if(salvando){
+
+        salvarNovamente = true;
+        return;
+
+    }
 
     salvando = true;
+    definirStatusSalvar("Salvando…", "salvando");
 
     try{
 
@@ -539,15 +559,64 @@ async function salvarFirebase(){
 
         });
 
+        tentativasErro = 0;
+        definirStatusSalvar("Salvo ✓", "salvo");
+
     }catch(erro){
 
         console.error(erro);
 
+        tentativasErro++;
+
+        definirStatusSalvar(
+            "⚠ Erro ao salvar — tentando novamente…",
+            "erro"
+        );
+
+        // Tenta de novo automaticamente (com espera crescente),
+        // em vez de simplesmente desistir e perder a edição.
+        salvando = false;
+
+        const espera = Math.min(2000 * tentativasErro, 15000);
+
+        setTimeout(salvarFirebase, espera);
+
+        if(tentativasErro >= 4){
+
+            alert(
+                "Não foi possível salvar as últimas alterações na agenda há vários minutos. " +
+                "Verifique sua conexão com a internet. Se o problema continuar, avise o suporte " +
+                "— pode ser um problema de permissão no Firebase."
+            );
+
+        }
+
+        return;
+
     }
 
-    salvando=false;
+    salvando = false;
+
+    if(salvarNovamente){
+
+        salvarNovamente = false;
+        salvarFirebase();
+
+    }
 
 }
+
+// Avisa antes de fechar/recarregar a aba se houver algo ainda não salvo
+window.addEventListener("beforeunload", (e) => {
+
+    if(salvando || timeoutSalvar){
+
+        e.preventDefault();
+        e.returnValue = "";
+
+    }
+
+});
 
 /* =====================================================
    FIREBASE
@@ -556,6 +625,11 @@ async function salvarFirebase(){
 onSnapshot(agendaRef,async(snapshot)=>{
 
     if(!snapshot.exists()){
+
+        // Só cria o documento vazio se ele realmente nunca existiu.
+        // (Se isso disparar depois de já ter havido dados, é sinal de
+        // que o documento foi apagado no Firestore — não escondemos mais o aviso.)
+        console.warn("Documento 'agenda/principal' não existe. Criando um novo vazio.");
 
         await setDoc(agendaRef,{
 
@@ -580,6 +654,24 @@ onSnapshot(agendaRef,async(snapshot)=>{
     ultimaVersao = json;
 
     desenharTabela(agenda);
+
+},(erro)=>{
+
+    // Antes, um erro aqui (ex: permissão negada nas regras do Firestore,
+    // ou sem internet) passava totalmente despercebido.
+    console.error("Erro ao sincronizar com o Firestore:", erro);
+
+    definirStatusSalvar("⚠ Sem conexão com o banco de dados", "erro");
+
+    if(erro.code === "permission-denied"){
+
+        alert(
+            "Sem permissão para acessar a agenda no Firebase. " +
+            "As regras de segurança do Firestore podem ter mudado. " +
+            "Avise o responsável técnico."
+        );
+
+    }
 
 });
 
