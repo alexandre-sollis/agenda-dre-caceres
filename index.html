@@ -79,11 +79,17 @@
 
 <div class="dashboard-actions">
 
+<div class="dashboard-actions-grid">
+
 <button id="btnAdicionarLinha" class="btn-novo-evento">
 
 ➕ Novo Evento
 
 </button>
+
+<button id="btnRemoverLinha" class="btn-novo-evento">
+                ➖ Excluir Evento
+            </button>
 
 <button id="btnBaixarExcel" class="btn-baixar-excel">
 
@@ -91,16 +97,17 @@
 
 </button>
 
-</div>
-<div class="dashboard-actions">
-            <button id="btnRemoverLinha" class="btn-novo-evento">
-                ➖ Excluir Evento
-            </button>
-            <button id="btnImportarExcel" class="btn-novo-evento" style="background: #0288d1;">
+<button id="btnImportarExcel" class="btn-novo-evento" style="background: #0288d1;">
                 📤 Importar Excel
             </button>
-            <input type="file" id="inputImportarExcel" accept=".xlsx,.xls,.csv" style="display:none;">
-        </div>
+
+</div>
+
+<span id="statusSalvar" class="status-salvar"></span>
+
+<input type="file" id="inputImportarExcel" accept=".xlsx,.xls,.csv" style="display:none;">
+
+</div>
     </section>
 
 
