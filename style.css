@@ -233,8 +233,14 @@ header {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     justify-content: center;
+}
+
+.dashboard-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 10px;
 }
 
 .btn-baixar-excel {
@@ -281,6 +287,26 @@ header {
 .btn-novo-evento:hover {
     background: #1D4ED8;
     transform: translateY(-3px);
+}
+
+/* ===========================
+   STATUS DE SALVAMENTO
+=========================== */
+
+.status-salvar {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    min-height: 18px;
+    color: #64748b;
+}
+
+.status-salvar.status-pendente { color: #b45309; }
+.status-salvar.status-salvando { color: #2563eb; }
+.status-salvar.status-salvo { color: #16a34a; }
+.status-salvar.status-erro {
+    color: #dc2626;
+    animation: pulsar 1s infinite;
 }
 
 /* ===========================
