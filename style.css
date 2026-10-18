@@ -998,3 +998,51 @@ footer {
         top: 110px;
     }
 }
+/* ===== ALINHAMENTO DE CARDS + BOTÕES ===== */
+.dashboard {
+    align-items: stretch;
+}
+
+/* Link do card Dados Escolares ocupa toda a altura */
+.stat-card-link {
+    display: flex;
+}
+
+.stat-card-link .stat-card {
+    flex: 1;
+    height: 100%;
+}
+
+/* Área dos botões: mesma altura dos cards */
+.dashboard-actions {
+    position: relative;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.dashboard-actions-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.dashboard-actions-grid button {
+    height: 100%;
+    min-height: 0;
+}
+
+/* Status de salvamento: fora do fluxo, não rouba altura dos botões */
+.status-salvar {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    min-height: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
