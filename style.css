@@ -32,6 +32,55 @@ html, body {
     z-index: -1;
 }
 
+/* ===== AJUSTE DO CABEÇALHO (desktop/TV) ===== */
+@media (min-width: 1101px) {
+
+    header {
+        height: 110px;
+        padding: 0 40px;
+        gap: 32px;
+        overflow: hidden;
+    }
+
+    /* Faixa do evento: ocupa o espaço livre e termina antes do logo */
+    #barraEvento {
+        flex: 1 1 0;
+        min-width: 0;
+        height: 64px;
+        padding: 0 24px;
+        font-size: clamp(28px, 2.6vw, 44px);
+        font-weight: 700;
+        border: 1px solid rgba(83, 202, 255, .55);
+    }
+
+    /* Logo + título, sem encolher */
+    .logo-area {
+        flex: 0 0 auto;
+        gap: 20px;
+    }
+
+    .logo {
+        height: 80px;
+    }
+
+    .logo-area h1 {
+        white-space: nowrap;
+        font-size: clamp(26px, 2.4vw, 44px);
+        line-height: 1.1;
+    }
+
+    .logo-area p {
+        white-space: nowrap;
+        font-size: clamp(16px, 1.4vw, 24px);
+        margin-top: 6px;
+    }
+
+    /* Acompanha a nova altura do cabeçalho */
+    .dashboard {
+        top: 110px;
+    }
+}
+
 /* ===========================
    HEADER (CABEÇALHO)
 =========================== */
